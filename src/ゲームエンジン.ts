@@ -1,7 +1,5 @@
 import { プレイヤー } from './データ/プレイヤー/プレイヤー.js';
 import { ゾーン } from './データ/ゾーン/ゾーン.js';
-import { 効果エンジン } from './効果処理/効果エンジン.js';
-import { 効果実行文脈, 効果結果 } from './効果処理/効果.js';
 
 export interface ゲームフェーズ {
   名前: string;
@@ -11,7 +9,6 @@ export interface ゲームフェーズ {
 export class ゲームエンジン {
   private プレイヤー一覧: Map<string, プレイヤー>;
   private ゾーン一覧: Map<string, ゾーン>;
-  private 効果エンジン: 効果エンジン;
   private 現在のフェーズ: ゲームフェーズ | null;
   private 現在のプレイヤーインデックス: number;
   private ゲーム中フラグ: boolean;
@@ -19,7 +16,6 @@ export class ゲームエンジン {
   constructor() {
     this.プレイヤー一覧 = new Map();
     this.ゾーン一覧 = new Map();
-    this.効果エンジン = new 効果エンジン();
     this.現在のフェーズ = null;
     this.現在のプレイヤーインデックス = 0;
     this.ゲーム中フラグ = false;
@@ -70,14 +66,6 @@ export class ゲームエンジン {
     return Array.from(this.ゾーン一覧.values());
   }
 
-  効果エンジンを取得(): 効果エンジン {
-    return this.効果エンジン;
-  }
-
-  async 効果を実行(効果識別子: string, 文脈: 効果実行文脈): Promise<効果結果> {
-    return this.効果エンジン.効果を実行(効果識別子, 文脈);
-  }
-
   現在のフェーズを設定(フェーズ: ゲームフェーズ): void {
     this.現在のフェーズ = フェーズ;
   }
@@ -114,6 +102,5 @@ export class ゲームエンジン {
     this.現在のフェーズ = null;
     this.現在のプレイヤーインデックス = 0;
     this.ゲーム中フラグ = false;
-    this.効果エンジン.効果スタックをクリア();
   }
 }
