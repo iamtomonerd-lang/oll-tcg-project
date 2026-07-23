@@ -42,23 +42,4 @@ export class 軽減シンボルルール {
     return 最終コスト;
   }
 
-  軽減シンボルを使わずにコスト支払い可能(
-    カード: バトルスピリッツスタンカード,
-    フィールドシンボル: { [種類: string]: number }
-  ): boolean {
-    const 軽減シンボル = this.軽減シンボルを取得(カード);
-
-    if (軽減シンボル.length === 0) {
-      return true;
-    }
-
-    for (const シンボル of 軽減シンボル) {
-      const フィールドシンボル数 = フィールドシンボル[シンボル.種類] ?? 0;
-      if (フィールドシンボル数 > 0) {
-        return false;
-      }
-    }
-
-    return true;
-  }
 }
