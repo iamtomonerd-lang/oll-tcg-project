@@ -1,9 +1,14 @@
 export type カード種類 = 'スピリット' | 'ネクサス' | 'マジック';
 
+export interface 軽減シンボル {
+  種類: string;
+  数値: number;
+}
+
 export interface バトルスピリッツスタンカード名称 {
   カード名: string;
   コスト: number;
-  軽減シンボル: string;
+  軽減シンボル: 軽減シンボル[];
   カード種類: カード種類;
   系統: string;
   カードテキスト: string;
