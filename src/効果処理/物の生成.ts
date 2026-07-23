@@ -1,5 +1,5 @@
 import { 効果, 効果実行文脈, 効果結果 } from './効果.js';
-import { カード, カード名称 } from '../データ/カード/カード.js';
+import { カード, 名称 } from '../データ/カード/カード.js';
 import { ゲーム物, ゲーム物種別 } from '../データ/ゲーム物/ゲーム物.js';
 
 export class 物の生成効果 extends 効果 {
@@ -13,7 +13,7 @@ export class 物の生成効果 extends 効果 {
 
     if (生成種別 === 'カード') {
       const カード識別子 = 追加データ?.カード識別子 as string | undefined;
-      const カード名称情報 = 追加データ?.カード名称 as カード名称 | undefined;
+      const カード名称情報 = 追加データ?.カード名称 as 名称 | undefined;
 
       if (!カード識別子 || !カード名称情報) {
         return { 成功: false, メッセージ: 'カード生成に必要な情報が不足しています' };

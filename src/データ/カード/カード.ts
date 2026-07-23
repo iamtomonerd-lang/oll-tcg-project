@@ -1,4 +1,4 @@
-export interface カード名称 {
+export interface 名称 {
   識別子: string;
   表示名: string;
   説明?: string;
@@ -6,11 +6,11 @@ export interface カード名称 {
 
 export class カード {
   readonly 識別子: string;
-  readonly 名称: カード名称;
+  readonly 名称: 名称;
   状態: Map<string, any>;
   数値: Map<string, number>;
 
-  constructor(識別子: string, 名称: カード名称) {
+  constructor(識別子: string, 名称: 名称) {
     this.識別子 = 識別子;
     this.名称 = 名称;
     this.状態 = new Map();
