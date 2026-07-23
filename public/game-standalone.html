@@ -357,109 +357,77 @@
   </div>
 
   <script>
-    // ゲームロジック（ブラウザ内で実行）
-    class Card {
-      constructor(id, name, hp = 0, atk = 0) {
-        this.id = id;
-        this.name = name;
-        this.hp = hp;
-        this.atk = atk;
+    // グローバルゲーム状態
+    var gameState = {
+      initialized: false,
+      playerA: {
+        name: 'Alice',
+        life: 20,
+        cards: [
+          { name: 'ピカチュウ', hp: 60, atk: 30 }
+        ]
+      },
+      playerB: {
+        name: 'Bob',
+        life: 20,
+        cards: [
+          { name: 'リザードン', hp: 100, atk: 50 }
+        ]
       }
-    }
+    };
 
-    class SimpleTCG {
-      constructor() {
-        this.playerA = { name: 'Alice', life: 20, fieldCards: [] };
-        this.playerB = { name: 'Bob', life: 20, fieldCards: [] };
-        this.initialized = false;
-      }
+    // ボタンクリックハンドラー
+    document.getElementById('initBtn').onclick = function() {
+      console.log('ゲーム開始ボタンがクリックされました');
+      gameState.initialized = true;
+      document.getElementById('initBtn').style.display = 'none';
+      document.getElementById('resetBtn').style.display = 'inline-block';
+      updateDisplay();
+    };
 
-      initialize() {
-        this.playerA.life = 20;
-        this.playerB.life = 20;
-        this.playerA.fieldCards = [
-          new Card('pikachu-1', 'ピカチュウ', 60, 30),
-        ];
-        this.playerB.fieldCards = [
-          new Card('charizard-1', 'リザードン', 100, 50),
-        ];
-        this.initialized = true;
-      }
-
-      getState() {
-        return {
-          initialized: this.initialized,
-          playerA: {
-            name: this.playerA.name,
-            life: this.playerA.life,
-            fieldCards: this.playerA.fieldCards,
-          },
-          playerB: {
-            name: this.playerB.name,
-            life: this.playerB.life,
-            fieldCards: this.playerB.fieldCards,
-          },
-        };
-      }
-    }
-
-    // UI制御
-    const game = new SimpleTCG();
-    const initBtn = document.getElementById('initBtn');
-    const resetBtn = document.getElementById('resetBtn');
-
-    initBtn.addEventListener('click', () => {
-      game.initialize();
-      initBtn.style.display = 'none';
-      resetBtn.style.display = 'inline-block';
-      renderGameState();
-    });
-
-    resetBtn.addEventListener('click', () => {
+    document.getElementById('resetBtn').onclick = function() {
+      console.log('リセットボタンがクリックされました');
       location.reload();
-    });
+    };
 
-    function renderGameState() {
-      const state = game.getState();
+    function updateDisplay() {
+      console.log('ゲーム画面を更新します');
 
-      if (!state.initialized) {
+      if (!gameState.initialized) {
         return;
       }
 
-      const playerA = state.playerA;
-      const playerB = state.playerB;
+      // プレイヤー名を更新
+      document.getElementById('playerA-name').textContent = gameState.playerA.name;
+      document.getElementById('playerB-name').textContent = gameState.playerB.name;
 
-      // プレイヤー名
-      document.getElementById('playerA-name').textContent = playerA.name;
-      document.getElementById('playerB-name').textContent = playerB.name;
+      // ライフバーを更新
+      updateLifeBar('playerA', gameState.playerA.life, 20);
+      updateLifeBar('playerB', gameState.playerB.life, 20);
 
-      // ライフ表示
-      updateLifeBar('playerA', playerA.life, 20);
-      updateLifeBar('playerB', playerB.life, 20);
+      // カードを表示
+      renderCards('playerA-field', gameState.playerA.cards);
+      renderCards('playerB-field', gameState.playerB.cards);
 
-      // 場のカード
-      renderCards('playerA-field', playerA.fieldCards);
-      renderCards('playerB-field', playerB.fieldCards);
-
-      // ゲーム中央
-      const gameInfo = document.querySelector('.game-info');
-      gameInfo.innerHTML = `
-        <div>
-          <p>⚔️ ${playerA.name} vs ${playerB.name}</p>
-          <p>${playerA.name} の ${playerA.fieldCards[0]?.name || 'カードなし'}</p>
-          <p>vs</p>
-          <p>${playerB.name} の ${playerB.fieldCards[0]?.name || 'カードなし'}</p>
-        </div>
-      `;
+      // ゲーム中央を更新
+      var gameInfo = document.querySelector('.game-info');
+      var cardA = gameState.playerA.cards[0];
+      var cardB = gameState.playerB.cards[0];
+      gameInfo.innerHTML = '<div>' +
+        '<p>⚔️ ' + gameState.playerA.name + ' vs ' + gameState.playerB.name + '</p>' +
+        '<p>' + gameState.playerA.name + ' の ' + (cardA ? cardA.name : 'カードなし') + '</p>' +
+        '<p>vs</p>' +
+        '<p>' + gameState.playerB.name + ' の ' + (cardB ? cardB.name : 'カードなし') + '</p>' +
+        '</div>';
     }
 
     function updateLifeBar(playerId, currentLife, maxLife) {
-      const lifeBar = document.getElementById(`${playerId}-life`);
-      const lifeText = document.getElementById(`${playerId}-life-text`);
+      var lifeBar = document.getElementById(playerId + '-life');
+      var lifeText = document.getElementById(playerId + '-life-text');
 
-      const percentage = Math.max(0, (currentLife / maxLife) * 100);
+      var percentage = Math.max(0, (currentLife / maxLife) * 100);
       lifeBar.style.width = percentage + '%';
-      lifeText.textContent = `${currentLife} / ${maxLife}`;
+      lifeText.textContent = currentLife + ' / ' + maxLife;
 
       if (currentLife <= 5) {
         lifeBar.style.background = 'linear-gradient(90deg, #ff6b6b 0%, #ff8e72 100%)';
@@ -471,27 +439,28 @@
     }
 
     function renderCards(containerId, cards) {
-      const container = document.getElementById(containerId);
+      var container = document.getElementById(containerId);
 
       if (!cards || cards.length === 0) {
         container.innerHTML = '<div class="empty-zone">カードが無い</div>';
         return;
       }
 
-      container.innerHTML = cards.map(card => `
-        <div class="card">
-          <div class="card-name">${card.name}</div>
-          <div class="card-stats">
-            <div class="card-stat">
-              <strong>HP</strong><br>${card.hp}
-            </div>
-            <div class="card-stat">
-              <strong>ATK</strong><br>${card.atk}
-            </div>
-          </div>
-        </div>
-      `).join('');
+      var html = '';
+      for (var i = 0; i < cards.length; i++) {
+        var card = cards[i];
+        html += '<div class="card">' +
+          '<div class="card-name">' + card.name + '</div>' +
+          '<div class="card-stats">' +
+          '<div class="card-stat"><strong>HP</strong><br>' + card.hp + '</div>' +
+          '<div class="card-stat"><strong>ATK</strong><br>' + card.atk + '</div>' +
+          '</div></div>';
+      }
+      container.innerHTML = html;
     }
+
+    // ページ読み込み時に初期化
+    console.log('ゲームが読み込まれました');
   </script>
 </body>
 </html>
