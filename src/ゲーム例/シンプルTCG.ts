@@ -177,4 +177,28 @@ export class シンプルTCG {
     console.log(`${this.プレイヤーB.名前}: ライフ ${this.プレイヤーB.ライフを取得()}`);
     console.log(`  手札: ${this.B手札.カード枚数を取得()}枚, 場: ${this.B場.カード枚数を取得()}枚`);
   }
+
+  プレイヤーAを取得(): プレイヤー {
+    return this.プレイヤーA;
+  }
+
+  プレイヤーBを取得(): プレイヤー {
+    return this.プレイヤーB;
+  }
+
+  A手札を取得(): ゾーン {
+    return this.A手札;
+  }
+
+  A場を取得(): ゾーン {
+    return this.A場;
+  }
+
+  B手札を取得(): ゾーン {
+    return this.B手札;
+  }
+
+  B場を取得(): ゾーン {
+    return this.B場;
+  }
 }
