@@ -1,15 +1,17 @@
-export { Card, CardName } from './data/card/CardName.js';
-export { Zone, ZoneName, ZoneConstraint } from './data/zone/ZoneName.js';
-export { Player } from './data/player/PlayerState.js';
-export { GameObject, GameObjectType } from './data/game/GameObject.js';
+export { カード, カード名称 } from './データ/カード/カード.js';
+export { ゾーン, ゾーン名称, ゾーン制約 } from './データ/ゾーン/ゾーン.js';
+export { プレイヤー } from './データ/プレイヤー/プレイヤー.js';
+export { ゲーム物, ゲーム物種別 } from './データ/ゲーム物/ゲーム物.js';
 
-export { Effect, EffectContext, EffectResult } from './effects/Effect.js';
-export { ReplacementEffect, ReplacementPredicate, ReplacementAction } from './effects/ReplacementEffect.js';
-export { ZoneMoveEffect } from './effects/ZoneMoveEffect.js';
-export { ValueChangeEffect, ValueChangeTarget } from './effects/ValueChangeEffect.js';
-export { StateChangeEffect, StateChangeTarget } from './effects/StateChangeEffect.js';
-export { SpawnEffect } from './effects/SpawnEffect.js';
-export { RandomEffect } from './effects/RandomEffect.js';
-export { EffectEngine } from './effects/EffectEngine.js';
+export { 効果, 効果実行文脈, 効果結果 } from './効果処理/効果.js';
+export { 置換効果, 置換条件, 置換処理 } from './効果処理/置換効果.js';
+export { ゾーン移動効果 } from './効果処理/ゾーン移動.js';
+export { 数値変化効果, 数値変化対象 } from './効果処理/数値変化.js';
+export { 状態変更効果, 状態変更対象 } from './効果処理/状態変更.js';
+export { 物の生成効果 } from './効果処理/物の生成.js';
+export { 乱数生成効果 } from './効果処理/乱数生成.js';
+export { シャッフル効果 } from './効果処理/シャッフル.js';
+export { 常在効果, 常在条件, 常在処理 } from './効果処理/常在効果.js';
+export { 効果エンジン } from './効果処理/効果エンジン.js';
 
-export { GameEngine, GamePhase } from './GameEngine.js';
+export { ゲームエンジン, ゲームフェーズ } from './ゲームエンジン.js';

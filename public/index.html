@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>シンプルTCG - Web版</title>
+  <link rel="stylesheet" href="game.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>🎮 シンプルTCG</h1>
+      <div class="status-bar">
+        <button id="initBtn" class="btn btn-primary">ゲーム開始</button>
+        <button id="resetBtn" class="btn btn-secondary" style="display: none;">リセット</button>
+      </div>
+    </header>
+
+    <main class="game-board">
+      <!-- プレイヤーB（敵） -->
+      <div class="player-section player-b">
+        <div class="player-header">
+          <h2 id="playerB-name">Bob</h2>
+          <div class="life-bar">
+            <div id="playerB-life" class="life-fill"></div>
+            <span id="playerB-life-text" class="life-text">20 / 20</span>
+          </div>
+        </div>
+        <div class="zone">
+          <h3>場</h3>
+          <div id="playerB-field" class="cards-container">
+            <div class="empty-zone">カードが無い</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ゲーム中央 -->
+      <div class="game-center">
+        <div class="game-info">
+          <p>ゲーム開始ボタンでゲームを始めてください</p>
+        </div>
+      </div>
+
+      <!-- プレイヤーA（プレイヤー） -->
+      <div class="player-section player-a">
+        <div class="zone">
+          <h3>手札</h3>
+          <div id="playerA-hand" class="cards-container">
+            <div class="empty-zone">カードが無い</div>
+          </div>
+        </div>
+        <div class="zone">
+          <h3>場</h3>
+          <div id="playerA-field" class="cards-container">
+            <div class="empty-zone">カードが無い</div>
+          </div>
+        </div>
+        <div class="player-header">
+          <h2 id="playerA-name">Alice</h2>
+          <div class="life-bar">
+            <div id="playerA-life" class="life-fill"></div>
+            <span id="playerA-life-text" class="life-text">20 / 20</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>TypeScript TCG Foundation | iPad対応版</p>
+    </footer>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
