@@ -31,6 +31,7 @@ export class Lv管理 {
     }
   }
 
+  // 現在のコア数はソウルコアを含む総数
   Lvを更新(カード: カード, 現在のコア数: number, ソウルコアあり: boolean = false): void {
     const 現在のLv = this.現在のLvを取得(カード);
     const 計算されたLv = this.Lv判定.現在のLvを計算(カード, 現在のコア数, ソウルコアあり);

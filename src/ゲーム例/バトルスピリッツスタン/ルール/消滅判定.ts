@@ -10,6 +10,7 @@ export class 消滅判定 {
     this.Lvルール = new Lvルール();
   }
 
+  // 現在のコア数はソウルコアを含む総数（ソウルコアも維持コアに数える）
   消滅判定(カード: カード, 現在のコア数: number): boolean {
     const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
@@ -22,7 +23,7 @@ export class 消滅判定 {
       return false;
     }
 
-    // Lv1コスト未満になったら消滅
+    // Lv1コスト未満（ソウルコア込みの総数で判定）になったら消滅
     return 現在のコア数 < Lv1情報.cost;
   }
 

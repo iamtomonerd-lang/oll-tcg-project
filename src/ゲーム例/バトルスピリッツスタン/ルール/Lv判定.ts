@@ -8,6 +8,7 @@ export class Lv判定 {
     this.Lvルール = new Lvルール();
   }
 
+  // 現在のコア数はソウルコアを含む総数（ソウルコアも1個のコアとして数える）
   現在のLvを計算(カード: カード, 現在のコア数: number, ソウルコアあり: boolean = false): number {
     const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
@@ -17,10 +18,12 @@ export class Lv判定 {
 
     let 現在のLv = 1;
     for (const Lv情報 of Lv情報配列) {
+      // コア条件：総コア数（ソウルコア込み）がコスト以上
       const コア条件 = 現在のコア数 >= Lv情報.cost;
-      const 真界放条件 = (Lv情報.真界放 ?? false) && ソウルコアあり;
+      // 真界放Lvはソウルコアが乗っていることも必要
+      const ソウルコア要件 = (Lv情報.真界放 ?? false) ? ソウルコアあり : true;
 
-      if (コア条件 || 真界放条件) {
+      if (コア条件 && ソウルコア要件) {
         現在のLv = Lv情報.level;
       } else {
         break;
@@ -42,11 +45,13 @@ export class Lv判定 {
       return false;
     }
 
+    // コア合計はソウルコアを含む総数
     const コア合計 = 現在のコア数 + 追加コア数;
     const コア条件 = コア合計 >= 次のLv情報.cost;
-    const 真界放条件 = (次のLv情報.真界放 ?? false) && ソウルコアあり;
+    // 真界放Lvはソウルコアが乗っていることも必要
+    const ソウルコア要件 = (次のLv情報.真界放 ?? false) ? ソウルコアあり : true;
 
-    return コア条件 || 真界放条件;
+    return コア条件 && ソウルコア要件;
   }
 
   Lvダウンするか(カード: カード, 現在のLv: number, 現在のコア数: number, ソウルコアあり: boolean = false): boolean {
@@ -63,10 +68,12 @@ export class Lv判定 {
 
     let 新しいLv = 1;
     for (const Lv情報 of Lv情報配列) {
+      // コア条件：総コア数（ソウルコア込み）がコスト以上
       const コア条件 = 現在のコア数 >= Lv情報.cost;
-      const 真界放条件 = (Lv情報.真界放 ?? false) && ソウルコアあり;
+      // 真界放Lvはソウルコアが乗っていることも必要
+      const ソウルコア要件 = (Lv情報.真界放 ?? false) ? ソウルコアあり : true;
 
-      if (コア条件 || 真界放条件) {
+      if (コア条件 && ソウルコア要件) {
         新しいLv = Lv情報.level;
       } else {
         break;
