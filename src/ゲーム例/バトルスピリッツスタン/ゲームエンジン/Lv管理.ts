@@ -9,15 +9,17 @@ export class Lv管理 {
   }
 
   現在のLvを取得(カード: カード): number {
-    const Lv = カード.状態.get('Lv');
-    return typeof Lv === 'number' ? Lv : 1;
+    // Lvは「この1枚の今の数」なので数値Mapで管理する
+    const Lv = カード.数値を取得('Lv');
+    // 未設定（0）の場合は初期値 Lv1
+    return Lv >= 1 ? Lv : 1;
   }
 
   Lvを上げる(カード: カード, 新しいLv: number): void {
     const 現在のLv = this.現在のLvを取得(カード);
 
     if (新しいLv > 現在のLv) {
-      カード.状態.set('Lv', 新しいLv);
+      カード.数値を設定('Lv', 新しいLv);
     }
   }
 
@@ -25,7 +27,7 @@ export class Lv管理 {
     const 現在のLv = this.現在のLvを取得(カード);
 
     if (新しいLv < 現在のLv) {
-      カード.状態.set('Lv', 新しいLv);
+      カード.数値を設定('Lv', 新しいLv);
     }
   }
 

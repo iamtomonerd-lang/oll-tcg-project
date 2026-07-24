@@ -9,12 +9,12 @@ export class BP管理 {
   }
 
   現在のBPを取得(カード: カード): number {
-    const BP = カード.状態.get('BP');
-    return typeof BP === 'number' ? BP : 0;
+    // BPは「この1枚の今の数」なので数値Mapで管理する
+    return カード.数値を取得('BP');
   }
 
   BPを設定(カード: カード, 新しいBP: number): void {
-    カード.状態.set('BP', 新しいBP);
+    カード.数値を設定('BP', 新しいBP);
   }
 
   Lvに対応したBPに更新(カード: カード, Lvレベル: number): void {

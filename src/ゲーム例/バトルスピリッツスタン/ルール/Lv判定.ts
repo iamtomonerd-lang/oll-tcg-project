@@ -18,7 +18,7 @@ export class Lv判定 {
     let 現在のLv = 1;
     for (const Lv情報 of Lv情報配列) {
       const コア条件 = 現在のコア数 >= Lv情報.cost;
-      const 真界放条件 = Lv情報.真界放 && ソウルコアあり;
+      const 真界放条件 = (Lv情報.真界放 ?? false) && ソウルコアあり;
 
       if (コア条件 || 真界放条件) {
         現在のLv = Lv情報.level;
@@ -44,7 +44,7 @@ export class Lv判定 {
 
     const コア合計 = 現在のコア数 + 追加コア数;
     const コア条件 = コア合計 >= 次のLv情報.cost;
-    const 真界放条件 = 次のLv情報.真界放 && ソウルコアあり;
+    const 真界放条件 = (次のLv情報.真界放 ?? false) && ソウルコアあり;
 
     return コア条件 || 真界放条件;
   }
@@ -64,7 +64,7 @@ export class Lv判定 {
     let 新しいLv = 1;
     for (const Lv情報 of Lv情報配列) {
       const コア条件 = 現在のコア数 >= Lv情報.cost;
-      const 真界放条件 = Lv情報.真界放 && ソウルコアあり;
+      const 真界放条件 = (Lv情報.真界放 ?? false) && ソウルコアあり;
 
       if (コア条件 || 真界放条件) {
         新しいLv = Lv情報.level;
