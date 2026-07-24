@@ -1,18 +1,14 @@
 import { カード } from '../../../データ/カード/カード.js';
 import { Lvルール } from '../カードの情報/Lv.js';
 
-export class Lvシステム {
-  // スピリットが持つルール
-  // Lvコストに応じてレベルを管理する
-  // Lvコスト以上のコアを置くとそのLvになる
-  // Lvコスト未満に減るとLvが下がる
+export class Lv判定 {
   private Lvルール: Lvルール;
 
   constructor() {
     this.Lvルール = new Lvルール();
   }
 
-  現在のLvを取得(カード: カード, 現在のコア数: number, ソウルコアあり: boolean = false): number {
+  現在のLvを計算(カード: カード, 現在のコア数: number, ソウルコアあり: boolean = false): number {
     const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
     if (!Array.isArray(Lv情報配列) || Lv情報配列.length === 0) {
@@ -34,7 +30,7 @@ export class Lvシステム {
     return 現在のLv;
   }
 
-  Lvアップ可能判定(カード: カード, 現在のLv: number, 追加コア数: number, 現在のコア数: number, ソウルコアあり: boolean = false): boolean {
+  Lvアップ可能か(カード: カード, 現在のLv: number, 追加コア数: number, 現在のコア数: number, ソウルコアあり: boolean = false): boolean {
     const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
     if (!Array.isArray(Lv情報配列)) {
@@ -53,7 +49,12 @@ export class Lvシステム {
     return コア条件 || 真界放条件;
   }
 
-  Lvダウン判定(カード: カード, 現在のLv: number, 現在のコア数: number, ソウルコアあり: boolean = false): number {
+  Lvダウンするか(カード: カード, 現在のLv: number, 現在のコア数: number, ソウルコアあり: boolean = false): boolean {
+    const 新しいLv = this.計算Lvダウン(カード, 現在のコア数, ソウルコアあり);
+    return 新しいLv < 現在のLv;
+  }
+
+  計算Lvダウン(カード: カード, 現在のコア数: number, ソウルコアあり: boolean = false): number {
     const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
     if (!Array.isArray(Lv情報配列)) {
