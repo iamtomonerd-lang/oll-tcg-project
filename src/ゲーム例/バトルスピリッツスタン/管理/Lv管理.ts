@@ -1,5 +1,5 @@
 import { カード } from '../../../データ/カード/カード.js';
-import { Lv判定 } from '../ルール/Lv判定.js';
+import { Lv判定 } from '../判定/Lv判定.js';
 
 export class Lv管理 {
   private Lv判定: Lv判定;

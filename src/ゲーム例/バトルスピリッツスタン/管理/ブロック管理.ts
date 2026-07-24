@@ -1,5 +1,5 @@
 import { カード } from '../../../データ/カード/カード.js';
-import { ブロック判定 } from '../ルール/ブロック判定.js';
+import { ブロック判定 } from '../判定/ブロック判定.js';
 
 export class ブロック管理 {
   private ブロック判定: ブロック判定;

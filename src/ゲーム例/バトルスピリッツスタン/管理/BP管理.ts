@@ -1,5 +1,5 @@
 import { カード } from '../../../データ/カード/カード.js';
-import { BP判定 } from '../ルール/BP判定.js';
+import { BP判定 } from '../判定/BP判定.js';
 
 export class BP管理 {
   private BP判定: BP判定;

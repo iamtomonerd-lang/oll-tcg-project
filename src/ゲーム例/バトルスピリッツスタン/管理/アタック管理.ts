@@ -1,5 +1,5 @@
 import { カード } from '../../../データ/カード/カード.js';
-import { アタック判定 } from '../ルール/アタック判定.js';
+import { アタック判定 } from '../判定/アタック判定.js';
 
 export class アタック管理 {
   private アタック判定: アタック判定;

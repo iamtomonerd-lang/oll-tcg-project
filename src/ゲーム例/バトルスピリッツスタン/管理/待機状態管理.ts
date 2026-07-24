@@ -1,5 +1,5 @@
 import { カード } from '../../../データ/カード/カード.js';
-import { 消滅判定 } from '../ルール/消滅判定.js';
+import { 消滅判定 } from '../判定/消滅判定.js';
 
 export class 待機状態管理 {
   private 消滅判定: 消滅判定;
