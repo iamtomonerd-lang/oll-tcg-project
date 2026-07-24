@@ -12,7 +12,7 @@ export class Lvシステム {
     this.Lvルール = new Lvルール();
   }
 
-  現在のLvを取得(カード: カード, 現在のコア数: number): number {
+  現在のLvを取得(カード: カード, 現在のコア数: number, ソウルコアあり: boolean = false): number {
     const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
     if (!Array.isArray(Lv情報配列) || Lv情報配列.length === 0) {
@@ -21,7 +21,10 @@ export class Lvシステム {
 
     let 現在のLv = 1;
     for (const Lv情報 of Lv情報配列) {
-      if (現在のコア数 >= Lv情報.cost) {
+      const コア条件 = 現在のコア数 >= Lv情報.cost;
+      const 真界放条件 = Lv情報.真界放 && ソウルコアあり;
+
+      if (コア条件 || 真界放条件) {
         現在のLv = Lv情報.level;
       } else {
         break;
@@ -31,7 +34,7 @@ export class Lvシステム {
     return 現在のLv;
   }
 
-  Lvアップ可能判定(カード: カード, 現在のLv: number, 追加コア数: number, 現在のコア数: number): boolean {
+  Lvアップ可能判定(カード: カード, 現在のLv: number, 追加コア数: number, 現在のコア数: number, ソウルコアあり: boolean = false): boolean {
     const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
     if (!Array.isArray(Lv情報配列)) {
@@ -44,10 +47,13 @@ export class Lvシステム {
     }
 
     const コア合計 = 現在のコア数 + 追加コア数;
-    return コア合計 >= 次のLv情報.cost;
+    const コア条件 = コア合計 >= 次のLv情報.cost;
+    const 真界放条件 = 次のLv情報.真界放 && ソウルコアあり;
+
+    return コア条件 || 真界放条件;
   }
 
-  Lvダウン判定(カード: カード, 現在のLv: number, 現在のコア数: number): number {
+  Lvダウン判定(カード: カード, 現在のLv: number, 現在のコア数: number, ソウルコアあり: boolean = false): number {
     const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
     if (!Array.isArray(Lv情報配列)) {
@@ -56,7 +62,10 @@ export class Lvシステム {
 
     let 新しいLv = 1;
     for (const Lv情報 of Lv情報配列) {
-      if (現在のコア数 >= Lv情報.cost) {
+      const コア条件 = 現在のコア数 >= Lv情報.cost;
+      const 真界放条件 = Lv情報.真界放 && ソウルコアあり;
+
+      if (コア条件 || 真界放条件) {
         新しいLv = Lv情報.level;
       } else {
         break;

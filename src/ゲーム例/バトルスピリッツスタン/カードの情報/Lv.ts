@@ -4,6 +4,7 @@ export interface Lv情報 {
   level: number;
   cost: number;
   bp: number;
+  真界放?: boolean;
 }
 
 export class Lvルール {
