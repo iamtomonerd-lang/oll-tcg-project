@@ -7,23 +7,21 @@ interface Lv情報 {
   bp: number;
 }
 
-export class BP計算 {
-  // スピリットが持つルール
-  // 現在のLvに対応したBPを計算する
+export class BP判定 {
   private Lvルール: Lvルール;
 
   constructor() {
     this.Lvルール = new Lvルール();
   }
 
-  BPを取得(カード: カード, 現在のLv: number): number {
+  BPを計算(カード: カード, Lvレベル: number): number {
     const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
     if (!Array.isArray(Lv情報配列)) {
       return 0;
     }
 
-    const Lv情報 = Lv情報配列.find(lv => lv.level === 現在のLv);
+    const Lv情報 = Lv情報配列.find(lv => lv.level === Lvレベル);
     if (!Lv情報) {
       return 0;
     }
@@ -31,7 +29,7 @@ export class BP計算 {
     return Lv情報.bp;
   }
 
-  最大BPを取得(カード: カード): number {
+  最大BPを計算(カード: カード): number {
     const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
     if (!Array.isArray(Lv情報配列) || Lv情報配列.length === 0) {
@@ -42,7 +40,7 @@ export class BP計算 {
     return 最大Lv情報.bp;
   }
 
-  最小BPを取得(カード: カード): number {
+  最小BPを計算(カード: カード): number {
     const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
     if (!Array.isArray(Lv情報配列) || Lv情報配列.length === 0) {
