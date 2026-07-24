@@ -1,5 +1,5 @@
-import { ゲームエンジン } from '../../ゲームエンジン.js';
-import { プレイヤー } from '../../データ/プレイヤー/プレイヤー.js';
+import { ゲームエンジン } from '../../../ゲームエンジン.js';
+import { プレイヤー } from '../../../データ/プレイヤー/プレイヤー.js';
 
 export interface 勝利結果 {
   勝利: boolean;
@@ -8,7 +8,7 @@ export interface 勝利結果 {
   理由: string;
 }
 
-export class バトルスピリッツ勝利条件 {
+export class バトルスピリッツ勝利判定 {
   勝利判定(ゲーム: ゲームエンジン, デッキゾーン識別子マップ: Map<string, string>): 勝利結果 {
     const プレイヤー一覧 = ゲーム.全プレイヤーを取得();
 
