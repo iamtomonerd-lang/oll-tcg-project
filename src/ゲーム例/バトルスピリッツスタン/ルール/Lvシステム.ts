@@ -1,13 +1,19 @@
 import { カード } from '../../../データ/カード/カード.js';
+import { Lvルール } from '../カードの情報/Lv.js';
 
 export class Lvシステム {
   // スピリットが持つルール
   // Lvコストに応じてレベルを管理する
   // Lvコスト以上のコアを置くとそのLvになる
   // Lvコスト未満に減るとLvが下がる
+  private Lvルール: Lvルール;
+
+  constructor() {
+    this.Lvルール = new Lvルール();
+  }
 
   現在のLvを取得(カード: カード, 現在のコア数: number): number {
-    const Lv情報配列 = (カード.名称 as any).Lv ?? [];
+    const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
     if (!Array.isArray(Lv情報配列) || Lv情報配列.length === 0) {
       return 1;
@@ -26,7 +32,7 @@ export class Lvシステム {
   }
 
   Lvアップ可能判定(カード: カード, 現在のLv: number, 追加コア数: number, 現在のコア数: number): boolean {
-    const Lv情報配列 = (カード.名称 as any).Lv ?? [];
+    const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
     if (!Array.isArray(Lv情報配列)) {
       return false;
@@ -42,7 +48,7 @@ export class Lvシステム {
   }
 
   Lvダウン判定(カード: カード, 現在のLv: number, 現在のコア数: number): number {
-    const Lv情報配列 = (カード.名称 as any).Lv ?? [];
+    const Lv情報配列 = this.Lvルール.Lvを取得(カード);
 
     if (!Array.isArray(Lv情報配列)) {
       return 1;
