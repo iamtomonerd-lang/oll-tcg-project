@@ -1,3 +1,5 @@
 @echo off
 cd /d "%~dp0"
-npm run server
+start http://localhost:3000
+call npm run server
+pause
