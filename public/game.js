@@ -59,8 +59,11 @@ function applyState(state) {
   }
 
   if (state.モード === 'vsHuman' && !state.自分が実行者か) {
-    renderHandoff(state);
-    showOnly(handoffScreen);
+    // 自動で次のプレイヤーに切り替え（交代画面をスキップ）
+    viewer = state.実行者識別子;
+    setTimeout(() => {
+      api('GET', `/api/game/state?as=${viewer}`).then(applyState);
+    }, 500);
     return;
   }
 

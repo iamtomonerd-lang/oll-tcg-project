@@ -158,6 +158,9 @@ button {
   flex-direction: column;
   padding: 16px;
   gap: 0;
+  margin: 0 auto;
+  max-width: 1280px;
+  width: 100%;
 }
 
 .side {
