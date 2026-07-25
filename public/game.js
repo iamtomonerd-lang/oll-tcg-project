@@ -252,13 +252,12 @@ function renderBoard(state) {
     return null;
   });
 
-  // 相手の手札は枚数分の裏向きカードとして表現する
+  // 相手の手札を表示（公開形式）
   const foeHand = el('foeHand');
   foeHand.innerHTML = '';
-  for (let i = 0; i < state.相手.手札枚数; i++) {
-    const back = document.createElement('div');
-    back.className = 'card-back';
-    foeHand.appendChild(back);
+  for (const card of state.相手.手札 || []) {
+    const cardEl = handCardEl(card, false);
+    foeHand.appendChild(cardEl);
   }
 
   const selfHand = el('selfHand');
