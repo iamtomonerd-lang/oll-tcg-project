@@ -319,19 +319,36 @@ button {
   position: relative;
   width: 108px;
   height: 150px;
-  background: linear-gradient(155deg, var(--ink-3), var(--ink-2));
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
   flex-shrink: 0;
   transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
 }
 
+/* 絵柄（無ければ既定のグラデーション）。角丸のクリップはこのレイヤーだけに掛け、
+   コーナーバッジ（Lv・コスト）は .card からはみ出す配置のままにする。 */
+.card-art {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--radius-card) - 1px);
+  overflow: hidden;
+  background: linear-gradient(155deg, var(--ink-3), var(--ink-2)) center / cover no-repeat;
+}
+
+.card-scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 6px 8px 8px;
+  border-radius: 0 0 calc(var(--radius-card) - 1px) calc(var(--radius-card) - 1px);
+  background: linear-gradient(to top, rgba(6, 7, 11, 0.94), rgba(6, 7, 11, 0.7) 55%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .card-name {
-  margin-top: 6px;
   font-size: 11px;
   font-weight: 700;
   line-height: 1.25;
@@ -346,6 +363,7 @@ button {
   position: absolute;
   top: -8px;
   left: -8px;
+  z-index: 2;
   background: var(--ink);
   border: 1px solid var(--core);
   color: var(--core-strong);

@@ -6,6 +6,11 @@ let lastState = null;
 let activeCoreCard = null;
 let coreMoveAmount = 1;
 
+// カードナンバー → 絵柄画像のパス（絵柄が無いカードは既定のグラデーションで表示する）
+const CARD_ART = {
+  '26RSD01-005': 'cards/26RSD01-005.png',
+};
+
 const el = id => document.getElementById(id);
 
 const modeScreen = el('modeScreen');
@@ -133,20 +138,45 @@ function cardPipsHTML(count, hasSoul) {
   return `<div class="card-pips">${parts.join('')}</div>`;
 }
 
+function artURL(cardNumber) {
+  return cardNumber && CARD_ART[cardNumber] ? CARD_ART[cardNumber] : null;
+}
+
+function applyArt(div, cardNumber) {
+  const art = artURL(cardNumber);
+  if (!art) return;
+  div.classList.add('has-art');
+  const artLayer = document.createElement('div');
+  artLayer.className = 'card-art';
+  artLayer.style.backgroundImage = `url('${art}')`;
+  div.appendChild(artLayer);
+}
+
 function fieldCardEl(card, mode) {
   const div = document.createElement('div');
   div.className = `card state-${card.表示形式}`;
   if (mode) div.classList.add(mode);
   div.dataset.cardId = card.識別子;
+  applyArt(div, card.カードナンバー); // 背景として一番下に積む
+
   const lvTitle = card.次のLvに必要な総コア数
     ? `次のLv${card.Lv + 1}には合計${card.次のLvに必要な総コア数}コア必要`
     : '最大Lv';
-  div.innerHTML = `
-    <span class="card-lv" title="${lvTitle}">Lv${card.Lv}</span>
-    <span class="card-name">${card.名前}</span>
+  const lvBadge = document.createElement('span');
+  lvBadge.className = 'card-lv';
+  lvBadge.title = lvTitle;
+  lvBadge.textContent = `Lv${card.Lv}`;
+  div.appendChild(lvBadge);
+
+  const nameRow = artURL(card.カードナンバー) ? '' : `<span class="card-name">${card.名前}</span>`;
+  const scrim = document.createElement('div');
+  scrim.className = 'card-scrim';
+  scrim.innerHTML = `
+    ${nameRow}
     ${cardPipsHTML(card.コア数, card.ソウルコア)}
     <span class="card-bp">${card.BP.toLocaleString()}</span>
   `;
+  div.appendChild(scrim);
   return div;
 }
 
@@ -155,14 +185,22 @@ function handCardEl(card, playable) {
   div.className = 'card hand-card';
   div.classList.add(playable ? 'playable' : 'unaffordable');
   div.dataset.cardId = card.識別子;
-  const costBadge = card.コスト < card.基本コスト
-    ? `<span class="card-cost reduced">${card.コスト}</span>`
-    : `<span class="card-cost">${card.コスト}</span>`;
-  div.innerHTML = `
-    ${costBadge}
-    <span class="card-name">${card.名前}</span>
-    <span class="card-text">${card.テキスト || '効果テキストなし'}</span>
+  applyArt(div, card.カードナンバー); // 背景として一番下に積む
+
+  const hasArt = !!artURL(card.カードナンバー);
+  const costClass = card.コスト < card.基本コスト ? 'card-cost reduced' : 'card-cost';
+  const costBadge = document.createElement('span');
+  costBadge.className = costClass;
+  costBadge.textContent = card.コスト;
+  div.appendChild(costBadge);
+
+  const scrim = document.createElement('div');
+  scrim.className = 'card-scrim';
+  scrim.innerHTML = `
+    ${hasArt ? '' : `<span class="card-name">${card.名前}</span>`}
+    ${card.テキスト ? `<span class="card-text">${card.テキスト}</span>` : ''}
   `;
+  div.appendChild(scrim);
   return div;
 }
 
