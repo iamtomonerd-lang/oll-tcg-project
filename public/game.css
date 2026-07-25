@@ -153,7 +153,6 @@ button {
 /* === 盤面全体 === */
 
 .board {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   padding: 8px;
@@ -166,8 +165,8 @@ button {
 .side {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px 4px;
+  gap: 4px;
+  padding: 4px 2px;
 }
 
 .side-bar {
