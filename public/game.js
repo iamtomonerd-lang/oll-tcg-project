@@ -55,6 +55,10 @@ function applyState(state) {
   if (state.試合終了か) {
     renderResult(state);
     showOnly(resultScreen);
+    // パネルを非表示にする
+    el('blockPanel').hidden = true;
+    el('coreMovePanel').hidden = true;
+    el('trashPanel').hidden = true;
     return;
   }
 
