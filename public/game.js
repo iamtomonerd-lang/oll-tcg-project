@@ -398,17 +398,35 @@ el('coreMoveToReserve').addEventListener('click', () => moveCore('toReserve'));
 
 // === トラッシュ一覧 ===
 
+function trashCardEl(card) {
+  const div = document.createElement('div');
+  div.className = 'card trash-card';
+  div.dataset.cardId = card.識別子;
+  applyArt(div, card.カードナンバー); // 背景として一番下に積む
+
+  const hasArt = !!artURL(card.カードナンバー);
+  const scrim = document.createElement('div');
+  scrim.className = 'card-scrim';
+  scrim.innerHTML = `
+    ${hasArt ? '' : `<span class="card-name">${card.名前}</span>`}
+  `;
+  div.appendChild(scrim);
+  return div;
+}
+
 function openTrash(list, title) {
   el('trashTitle').textContent = title;
-  const ul = el('trashList');
-  ul.innerHTML = '';
+  const container = el('trashList');
+  container.innerHTML = '';
   if (list.length === 0) {
-    ul.innerHTML = '<li class="empty">トラッシュは空です</li>';
+    const empty = document.createElement('div');
+    empty.className = 'trash-empty';
+    empty.textContent = 'トラッシュは空です';
+    container.appendChild(empty);
   } else {
     for (const card of list) {
-      const li = document.createElement('li');
-      li.textContent = card.名前;
-      ul.appendChild(li);
+      const cardEl = trashCardEl(card);
+      container.appendChild(cardEl);
     }
   }
   el('trashPanel').hidden = false;

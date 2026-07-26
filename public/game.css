@@ -601,23 +601,25 @@ button {
   list-style: none;
   margin: 0 0 8px;
   padding: 0;
-  max-height: 260px;
+  max-height: 380px;
   overflow-y: auto;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
 }
 
-.trash-list li {
-  padding: 8px 10px;
-  background: var(--ink-3);
-  border-radius: var(--radius-chrome);
-  font-size: 13px;
+.card.trash-card {
+  width: 90px;
+  height: 128px;
 }
 
-.trash-list .empty {
-  color: var(--text-faint);
+.trash-empty {
+  width: 100%;
+  padding: 20px;
   text-align: center;
+  color: var(--text-faint);
+  font-size: 13px;
 }
 
 .popover-block {
