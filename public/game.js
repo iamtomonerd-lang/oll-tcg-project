@@ -226,14 +226,10 @@ function handCardEl(card, playable) {
   `;
   div.appendChild(scrim);
 
-  // 右クリックで効果情報をポップアップ表示
+  // 右クリックでカード詳細を拡大表示
   div.addEventListener('contextmenu', (e) => {
     e.preventDefault();
-    if (card.テキスト) {
-      showCardEffect(card);
-    } else {
-      showToast('このカードに効果はありません');
-    }
+    showCardDetail(card);
   });
 
   return div;
