@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { ゲン_ボーを作成 } from './ゲン_ボー.js';
 import { BP管理 } from '../管理/BP管理.js';
+import { シンボルルール } from '../カードの情報/シンボル.js';
 
 test('ゲン_ボー: card definition is correct', () => {
   const card = ゲン_ボーを作成('genbo-1');
@@ -71,4 +72,15 @@ test('ゲン_ボー: effect execution adds BP+2000 when attacking', async () => 
 
   const finalBp = bpManager.現在のBPを取得(card);
   assert.equal(finalBp, initialBp + 2000);
+});
+
+test('ゲン_ボー: has EX symbol for succession call', () => {
+  const card = ゲン_ボーを作成('genbo-1');
+  const symbolRule = new シンボルルール();
+
+  const hasEX = symbolRule.EXシンボルを持つ(card);
+  assert.equal(hasEX, true);
+
+  const exSymbolCount = symbolRule.EXシンボル数を取得(card);
+  assert.equal(exSymbolCount, 1);
 });
