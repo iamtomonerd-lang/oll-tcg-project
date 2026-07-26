@@ -202,6 +202,13 @@ function fieldCardEl(card, mode) {
     <span class="card-bp">${card.BP.toLocaleString()}</span>
   `;
   div.appendChild(scrim);
+
+  // 右クリックでカード詳細を拡大表示
+  div.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    showCardDetail(card);
+  });
+
   return div;
 }
 
