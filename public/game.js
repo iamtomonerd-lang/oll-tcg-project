@@ -223,9 +223,17 @@ function handCardEl(card, playable) {
   scrim.className = 'card-scrim';
   scrim.innerHTML = `
     ${hasArt ? '' : `<span class="card-name">${card.名前}</span>`}
-    ${card.テキスト ? `<span class="card-text">${card.テキスト}</span>` : ''}
   `;
   div.appendChild(scrim);
+
+  // 右クリックで効果情報をポップアップ表示
+  if (card.テキスト) {
+    div.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      showCardEffect(card);
+    });
+  }
+
   return div;
 }
 
@@ -395,6 +403,18 @@ async function moveCore(方向) {
 
 el('coreMoveToCard').addEventListener('click', () => moveCore('toCard'));
 el('coreMoveToReserve').addEventListener('click', () => moveCore('toReserve'));
+
+// === カード効果情報 ===
+
+function showCardEffect(card) {
+  el('cardEffectName').textContent = card.名前;
+  el('cardEffectText').textContent = card.テキスト || '効果なし';
+  el('cardEffectPanel').hidden = false;
+}
+
+el('cardEffectClose').addEventListener('click', () => {
+  el('cardEffectPanel').hidden = true;
+});
 
 // === トラッシュ一覧 ===
 
