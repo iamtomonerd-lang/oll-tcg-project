@@ -636,6 +636,24 @@ button {
   overflow-y: auto;
 }
 
+.popover-card-detail {
+  width: min(360px, calc(100vw - 32px));
+  max-width: 100%;
+}
+
+.card-detail-content {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.card.card-detail {
+  width: 180px;
+  height: 252px;
+  border-color: var(--core);
+  box-shadow: 0 0 0 1px var(--core-soft), 0 0 20px -4px var(--core);
+}
+
 .popover-block {
   width: min(420px, calc(100vw - 32px));
 }

@@ -416,7 +416,29 @@ el('cardEffectClose').addEventListener('click', () => {
   el('cardEffectPanel').hidden = true;
 });
 
+el('cardDetailClose').addEventListener('click', () => {
+  el('cardDetailPanel').hidden = true;
+});
+
 // === トラッシュ一覧 ===
+
+function showCardDetail(card) {
+  const container = el('cardDetailContent');
+  container.innerHTML = '';
+
+  const cardEl = document.createElement('div');
+  cardEl.className = 'card card-detail';
+  cardEl.dataset.cardId = card.識別子;
+  applyArt(cardEl, card.カードナンバー);
+
+  const scrim = document.createElement('div');
+  scrim.className = 'card-scrim';
+  scrim.innerHTML = `<span class="card-name">${card.名前}</span>`;
+  cardEl.appendChild(scrim);
+
+  container.appendChild(cardEl);
+  el('cardDetailPanel').hidden = false;
+}
 
 function trashCardEl(card) {
   const div = document.createElement('div');
@@ -431,6 +453,10 @@ function trashCardEl(card) {
     ${hasArt ? '' : `<span class="card-name">${card.名前}</span>`}
   `;
   div.appendChild(scrim);
+
+  // クリックで拡大表示
+  div.addEventListener('click', () => showCardDetail(card));
+
   return div;
 }
 
