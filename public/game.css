@@ -637,21 +637,22 @@ button {
 }
 
 .popover-card-detail {
-  width: min(360px, calc(100vw - 32px));
+  width: min(500px, calc(100vw - 32px));
   max-width: 100%;
+  padding: 24px;
 }
 
 .card-detail-content {
   display: flex;
   justify-content: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .card.card-detail {
-  width: 180px;
-  height: 252px;
+  width: 300px;
+  height: 420px;
   border-color: var(--core);
-  box-shadow: 0 0 0 1px var(--core-soft), 0 0 20px -4px var(--core);
+  box-shadow: 0 0 0 2px var(--core-soft), 0 0 30px -6px var(--core);
 }
 
 .popover-block {

@@ -227,12 +227,14 @@ function handCardEl(card, playable) {
   div.appendChild(scrim);
 
   // 右クリックで効果情報をポップアップ表示
-  if (card.テキスト) {
-    div.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
+  div.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (card.テキスト) {
       showCardEffect(card);
-    });
-  }
+    } else {
+      showToast('このカードに効果はありません');
+    }
+  });
 
   return div;
 }
@@ -440,9 +442,10 @@ function showCardDetail(card) {
     cardEl.appendChild(artLayer);
   }
 
+  // 拡大表示では文字を非表示（画像のみ表示）
   const scrim = document.createElement('div');
   scrim.className = 'card-scrim';
-  scrim.innerHTML = `${art ? '' : `<span class="card-name">${card.名前}</span>`}`;
+  scrim.innerHTML = '';
   cardEl.appendChild(scrim);
 
   container.appendChild(cardEl);
