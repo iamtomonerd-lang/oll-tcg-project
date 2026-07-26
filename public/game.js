@@ -429,11 +429,20 @@ function showCardDetail(card) {
   const cardEl = document.createElement('div');
   cardEl.className = 'card card-detail';
   cardEl.dataset.cardId = card.識別子;
-  applyArt(cardEl, card.カードナンバー);
+
+  // 背景として絵柄を積む
+  const art = artURL(card.カードナンバー);
+  if (art) {
+    cardEl.classList.add('has-art');
+    const artLayer = document.createElement('div');
+    artLayer.className = 'card-art';
+    artLayer.style.backgroundImage = `url('${art}')`;
+    cardEl.appendChild(artLayer);
+  }
 
   const scrim = document.createElement('div');
   scrim.className = 'card-scrim';
-  scrim.innerHTML = `<span class="card-name">${card.名前}</span>`;
+  scrim.innerHTML = `${art ? '' : `<span class="card-name">${card.名前}</span>`}`;
   cardEl.appendChild(scrim);
 
   container.appendChild(cardEl);
