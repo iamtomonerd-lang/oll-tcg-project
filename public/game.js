@@ -469,8 +469,11 @@ function trashCardEl(card) {
   `;
   div.appendChild(scrim);
 
-  // クリックで拡大表示
-  div.addEventListener('click', () => showCardDetail(card));
+  // 右クリックでカード詳細を拡大表示
+  div.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    showCardDetail(card);
+  });
 
   return div;
 }
