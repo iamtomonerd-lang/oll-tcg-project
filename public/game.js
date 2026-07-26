@@ -5,21 +5,24 @@ let viewer = 'p1';       // 今この画面が誰の視点として振る舞っ�
 let lastState = null;
 let activeCoreCard = null;
 let coreMoveAmount = 1;
+let selectedDeck = 'gungata'; // 選択されたデッキ
 
 // カードナンバー → 絵柄画像のパス（絵柄が無いカードは既定のグラデーションで表示する）
 const CARD_ART = {
+  '26RSD01-002': 'cards/26RSD01-002.png',
   '26RSD01-005': 'cards/26RSD01-005.png',
 };
 
 const el = id => document.getElementById(id);
 
+const deckScreen = el('deckScreen');
 const modeScreen = el('modeScreen');
 const handoffScreen = el('handoffScreen');
 const resultScreen = el('resultScreen');
 const board = el('board');
 
 function showOnly(screen) {
-  for (const s of [modeScreen, handoffScreen, resultScreen, board]) {
+  for (const s of [deckScreen, modeScreen, handoffScreen, resultScreen, board]) {
     s.hidden = s !== screen;
   }
 }
@@ -75,12 +78,27 @@ function applyState(state) {
   showOnly(board);
 }
 
+// === デッキ選択 ===
+
+for (const btn of document.querySelectorAll('.deck-btn')) {
+  btn.addEventListener('click', () => {
+    selectedDeck = btn.dataset.deck;
+    const deckName = btn.dataset.deck === 'gungata' ? 'グン＝ガタ' : 'ゲン＝ボー';
+    el('modeEyebrow').textContent = `${deckName}で対戦`;
+    showOnly(modeScreen);
+  });
+}
+
+el('deckBack').addEventListener('click', () => {
+  showOnly(deckScreen);
+});
+
 // === モード選択 ===
 
 for (const btn of document.querySelectorAll('.mode-btn[data-mode]')) {
   btn.addEventListener('click', async () => {
     viewer = 'p1';
-    const state = await api('POST', '/api/game/start', { mode: btn.dataset.mode });
+    const state = await api('POST', '/api/game/start', { mode: btn.dataset.mode, deck: selectedDeck });
     applyState(state);
   });
 }

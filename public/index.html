@@ -8,12 +8,31 @@
 </head>
 <body>
 
-  <!-- モード選択 -->
-  <section id="modeScreen" class="overlay-screen">
+  <!-- デッキ選択 -->
+  <section id="deckScreen" class="overlay-screen">
     <div class="mode-card">
-      <p class="eyebrow">グン＝ガタ・オンリー環境</p>
+      <p class="eyebrow">デッキを選んでください</p>
       <h1>バトルスピリッツ・スタン</h1>
-      <p class="mode-lead">対戦相手を選んでください。</p>
+      <p class="mode-lead">使用するデッキを選んでください。</p>
+      <div class="mode-choices">
+        <button class="mode-btn deck-btn" data-deck="gungata">
+          <span class="mode-btn-title">グン＝ガタ</span>
+          <span class="mode-btn-desc">赤色のスピリット（BP5000→8000）</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="genbo">
+          <span class="mode-btn-title">ゲン＝ボー</span>
+          <span class="mode-btn-desc">赤色のスピリット（BP3000→5000）</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- モード選択 -->
+  <section id="modeScreen" class="overlay-screen" hidden>
+    <div class="mode-card">
+      <p class="eyebrow" id="modeEyebrow">―</p>
+      <h1>対戦相手を選んでください</h1>
+      <p class="mode-lead"></p>
       <div class="mode-choices">
         <button class="mode-btn" data-mode="vsAI">
           <span class="mode-btn-title">練習用AIと対戦</span>
@@ -24,6 +43,7 @@
           <span class="mode-btn-desc">手番が変わるたびに画面を渡し合います。</span>
         </button>
       </div>
+      <button id="deckBack" class="btn-outline" style="margin-top: 16px;">← デッキを変更</button>
     </div>
   </section>
 
