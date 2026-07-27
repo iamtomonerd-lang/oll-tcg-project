@@ -7,6 +7,11 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// API エンドポイント（サーバー必須、今後クライアント側化予定）
+const API_BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? 'https://api.example.com'  // 本番環境
+  : '';  // 開発環境（同じドメイン）
+
 // バトルスピリッツ・スタン — 対戦盤面のクライアント側ロジック
 let viewer = 'p1';
 let lastState: any = null;
@@ -45,17 +50,24 @@ function showToast(message: string) {
 }
 
 async function api(method: string, url: string, body?: any): Promise<any> {
-  const res = await fetch(url, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json();
-  if (!data.ok) {
-    showToast(data.error || 'エラーが発生しました');
+  try {
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+    const res = await fetch(fullUrl, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      showToast(data.error || 'エラーが発生しました');
+      return null;
+    }
+    return data.state;
+  } catch (e) {
+    console.error('API error:', e);
+    showToast('ネットワークエラー');
     return null;
   }
-  return data.state;
 }
 
 function applyState(state: any) {
