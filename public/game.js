@@ -9,6 +9,7 @@ let selectedDeck = 'gungata'; // 選択されたデッキ
 
 // カードナンバー → 絵柄画像のパス（絵柄が無いカードは既定のグラデーションで表示する）
 const CARD_ART = {
+  '26RSD01-001': 'cards/26RSD01-001.png',
   '26RSD01-002': 'cards/26RSD01-002.png',
   '26RSD01-005': 'cards/26RSD01-005.png',
 };
