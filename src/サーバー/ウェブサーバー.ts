@@ -540,6 +540,42 @@ app.post('/api/action/move-soul-core', (req: Request, res: Response) => {
   res.json({ ok: true, state: 状態を作る(s, as) });
 });
 
+// リザーブのソウルコアをカードに乗せる
+app.post('/api/action/place-soul-core', (req: Request, res: Response) => {
+  const s = セッション必須(res);
+  if (!s) return;
+  const { as, cardId } = req.body as {
+    as: string;
+    cardId: string;
+  };
+
+  if (s.試合.試合終了か()) return エラー応答(res, '試合は終了しています');
+  if (s.保留中の攻撃) return エラー応答(res, 'ブロック判断待ちです');
+  if (s.試合.ゲーム.現在のプレイヤーを取得()?.識別子 !== as) return エラー応答(res, 'あなたのターンではありません');
+  if (!['メインステップ', '第2メインステップ'].includes(s.試合.現在のステップ() ?? '')) {
+    return エラー応答(res, 'メインステップでのみ行えます');
+  }
+
+  const フィールド = s.試合.ゾーン管理.フィールドを取得(s.試合.ゲーム, as);
+  const リザーブ = s.試合.ゾーン管理.リザーブを取得(s.試合.ゲーム, as);
+  if (!フィールド || !リザーブ) return エラー応答(res, 'ゾーンが見つかりません');
+
+  const カード = フィールド.カードを取得(cardId);
+  if (!カード) return エラー応答(res, '自分のフィールドにありません');
+
+  // リザーブのソウルコアをカードに移動する
+  const コア管理保持者_カード = s.試合.コア管理.カードを保持者に(カード);
+  const コア管理保持者_リザーブ = s.試合.コア管理.ゾーンを保持者に(リザーブ);
+  const 成功 = s.試合.コア管理.ソウルコアを移動(コア管理保持者_リザーブ, コア管理保持者_カード);
+  if (!成功) return エラー応答(res, 'ソウルコアを乗せられません');
+
+  s.試合.Lv管理.Lvを更新(カード, コア管理保持者_カード.コア数を取得(), コア管理保持者_カード.ソウルコアあるか());
+  s.試合.ルール処理を実行する();
+
+  人間の手番まで自動進行する(s);
+  res.json({ ok: true, state: 状態を作る(s, as) });
+});
+
 app.listen(ポート, () => {
   console.log(`\n🎮 バトルスピリッツ・スタン サーバーが起動しました！`);
   console.log(`   http://localhost:${ポート}`);
