@@ -499,6 +499,7 @@ app.post('/api/action/move-core', (req: Request, res: Response) => {
   const 成功 = 方向 === 'toCard' ? s.試合.コアを移動する(リザーブ, カード, 数) : s.試合.コアを移動する(カード, リザーブ, 数);
   if (!成功) return エラー応答(res, 'コアを移動できません');
 
+  s.試合.ルール処理を実行する();
   人間の手番まで自動進行する(s);
   res.json({ ok: true, state: 状態を作る(s, as) });
 });
