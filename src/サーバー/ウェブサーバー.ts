@@ -7,6 +7,7 @@ import { カード } from '../データ/カード/カード.js';
 import { コア保持者 } from '../ゲーム例/バトルスピリッツスタン/判定/コア保持者.js';
 import { グンガタを作成 } from '../ゲーム例/バトルスピリッツスタン/カードデータ/グンガタ.js';
 import { ゲン_ボーを作成 } from '../ゲーム例/バトルスピリッツスタン/カードデータ/ゲン_ボー.js';
+import { ムーシャッコを作成 } from '../ゲーム例/バトルスピリッツスタン/カードデータ/ムーシャッコ.js';
 import { 練習用AI } from '../ゲーム例/バトルスピリッツスタン/AI/練習用AI.js';
 import { カード種別ルール } from '../ゲーム例/バトルスピリッツスタン/カードの情報/カード種別.js';
 import { コストルール } from '../ゲーム例/バトルスピリッツスタン/カードの情報/コスト.js';
@@ -57,7 +58,7 @@ let セッション: セッション | null = null;
 
 const 相手識別子 = (識別子: string): string => (識別子 === 'p1' ? 'p2' : 'p1');
 
-type デッキタイプ = 'gungata' | 'genbo';
+type デッキタイプ = 'gungata' | 'genbo' | 'mushaako';
 
 function グンガタデッキを作成(接頭辞: string, 枚数 = 20): カード[] {
   return Array.from({ length: 枚数 }, (_, i) => グンガタを作成(`${接頭辞}-gungata-${i + 1}`));
@@ -67,9 +68,16 @@ function ゲン_ボーデッキを作成(接頭辞: string, 枚数 = 20): カー
   return Array.from({ length: 枚数 }, (_, i) => ゲン_ボーを作成(`${接頭辞}-genbo-${i + 1}`));
 }
 
+function ムーシャッコデッキを作成(接頭辞: string, 枚数 = 20): カード[] {
+  return Array.from({ length: 枚数 }, (_, i) => ムーシャッコを作成(`${接頭辞}-mushaako-${i + 1}`));
+}
+
 function デッキを作成(接頭辞: string, タイプ: デッキタイプ): カード[] {
   if (タイプ === 'genbo') {
     return ゲン_ボーデッキを作成(接頭辞);
+  }
+  if (タイプ === 'mushaako') {
+    return ムーシャッコデッキを作成(接頭辞);
   }
   return グンガタデッキを作成(接頭辞);
 }
@@ -344,7 +352,12 @@ app.post('/api/game/start', (req: Request, res: Response) => {
     エラー応答(res, '不正なモードです');
     return;
   }
-  const デッキタイプ = deck === 'genbo' ? 'genbo' : 'gungata';
+  let デッキタイプ: デッキタイプ = 'gungata';
+  if (deck === 'genbo') {
+    デッキタイプ = 'genbo';
+  } else if (deck === 'mushaako') {
+    デッキタイプ = 'mushaako';
+  }
   セッション = 新しい試合を作る(mode, デッキタイプ);
   人間の手番まで自動進行する(セッション);
   res.json({ ok: true, state: 状態を作る(セッション, 'p1') });
