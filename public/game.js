@@ -11,6 +11,7 @@ let selectedDeck = 'gungata'; // 選択されたデッキ
 const CARD_ART = {
   '26RSD01-001': 'cards/26RSD01-001.png',
   '26RSD01-002': 'cards/26RSD01-002.png',
+  '26RSD01-003': 'cards/26RSD01-003.png',
   '26RSD01-005': 'cards/26RSD01-005.png',
 };
 
@@ -272,6 +273,8 @@ function renderField(containerId, cards, classify) {
       cardEl.addEventListener('click', () => doAttack(card.識別子));
     } else if (mode === 'editable') {
       cardEl.addEventListener('click', () => openCoreMove(card));
+    } else if (mode === 'effect-target') {
+      cardEl.addEventListener('click', () => selectEffectTarget(card.識別子));
     }
     container.appendChild(cardEl);
   }
@@ -316,7 +319,7 @@ function renderBoard(state) {
   });
 
   const 自分のターンで随意ステップ =
-    state.ターンプレイヤー識別子 === viewer && !state.保留中のブロック;
+    state.ターンプレイヤー識別子 === viewer && !state.保留中のブロック && !state.保留中の効果;
   const アタックステップ中 = 自分のターンで随意ステップ && state.ステップ === 'アタックステップ';
   const メインステップ中 =
     自分のターンで随意ステップ && (state.ステップ === 'メインステップ' || state.ステップ === '第2メインステップ');
