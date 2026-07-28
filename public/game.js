@@ -277,11 +277,43 @@ function renderField(containerId, cards, classify) {
   }
 }
 
+async function selectEffectTarget(cardId) {
+  const state = await api('POST', '/api/action/select-effect-target', { as: viewer, targetCardId: cardId });
+  applyState(state);
+}
+
 function renderBoard(state) {
   renderZoneRow('foe', state.相手);
   renderZoneRow('self', state.自分);
 
-  renderField('foeField', state.相手.フィールド, null);
+  // 保留中の効果がある場合、対象選択UIを表示
+  const effectPanel = el('effectPanel');
+  if (state.保留中の効果) {
+    effectPanel.hidden = false;
+    const effectTitle = el('effectTitle');
+    effectTitle.textContent = '効果対象を選択してください';
+
+    const 対象一覧 = el('effectTargetList');
+    対象一覧.innerHTML = '';
+    for (const 対象 of state.保留中の効果.対象候補一覧) {
+      const btn = document.createElement('button');
+      btn.className = 'effect-target-btn';
+      btn.textContent = `${対象.名前} (BP: ${対象.BP})`;
+      btn.addEventListener('click', () => selectEffectTarget(対象.識別子));
+      対象一覧.appendChild(btn);
+    }
+  } else {
+    effectPanel.hidden = true;
+  }
+
+  renderField('foeField', state.相手.フィールド, (card) => {
+    // 保留中の効果があり、このカードが対象候補の場合はハイライト
+    if (state.保留中の効果) {
+      const 対象 = state.保留中の効果.対象候補一覧.find(c => c.識別子 === card.識別子);
+      if (対象) return 'effect-target';
+    }
+    return null;
+  });
 
   const 自分のターンで随意ステップ =
     state.ターンプレイヤー識別子 === viewer && !state.保留中のブロック;

@@ -46,12 +46,20 @@ interface 保留中の攻撃 {
   防御側識別子: string;
 }
 
+interface 保留中の効果 {
+  トリガー元カード識別子: string;
+  効果識別子: string;
+  対象候補一覧: { 識別子: string; 名前: string }[];
+  対象選択中: boolean;
+}
+
 interface セッション {
   モード: モード;
   試合: 試合;
   AIマップ: Map<string, 練習用AI>;
   保留中の攻撃: 保留中の攻撃 | null;
   攻撃ステップ初期化済み: boolean;
+  保留中の効果: 保留中の効果 | null;
 }
 
 let セッション: セッション | null = null;
@@ -100,7 +108,7 @@ function 新しい試合を作る(モード: モード, デッキタイプ: デ�
     AIマップ.set('p2', new 練習用AI('p2', 'p1'));
   }
 
-  return { モード, 試合: 試合インスタンス, AIマップ, 保留中の攻撃: null, 攻撃ステップ初期化済み: false };
+  return { モード, 試合: 試合インスタンス, AIマップ, 保留中の攻撃: null, 攻撃ステップ初期化済み: false, 保留中の効果: null };
 }
 
 function カードを探す(試合インスタンス: 試合, 識別子: string): カード | null {
@@ -331,6 +339,12 @@ function 状態を作る(s: セッション, 視点: string) {
     実行者識別子,
     自分が実行者か: 実行者識別子 === 視点,
     保留中のブロック,
+    保留中の効果: s.保留中の効果 ? {
+      トリガー元カード識別子: s.保留中の効果.トリガー元カード識別子,
+      効果識別子: s.保留中の効果.効果識別子,
+      対象候補一覧: s.保留中の効果.対象候補一覧,
+      対象選択中: s.保留中の効果.対象選択中,
+    } : null,
     自分: プレイヤー状態を作る(s, 視点, true),
     相手: プレイヤー状態を作る(s, 相手, true),
   };
@@ -413,8 +427,17 @@ app.post('/api/action/summon', (req: Request, res: Response) => {
   );
   if (!成功) return エラー応答(res, '召喚に失敗しました');
 
-  人間の手番まで自動進行する(s);
-  res.json({ ok: true, state: 状態を作る(s, as) });
+  // 召喚時効果をトリガーするか判定
+  召喚時効果をトリガーする(s, カード, as);
+
+  if (s.保留中の効果) {
+    // 効果トリガー待ち：状態を返して対象選択待ち
+    res.json({ ok: true, state: 状態を作る(s, as) });
+  } else {
+    // 効果がない、または条件を満たさない：自動進行
+    人間の手番まで自動進行する(s);
+    res.json({ ok: true, state: 状態を作る(s, as) });
+  }
 });
 
 app.post('/api/action/attack', (req: Request, res: Response) => {
@@ -544,6 +567,50 @@ app.post('/api/action/move-soul-core', (req: Request, res: Response) => {
   res.json({ ok: true, state: 状態を作る(s, as) });
 });
 
+// 召喚時効果をトリガーするか判定し、対象候補を取得
+function 召喚時効果をトリガーする(s: セッション, カード: カード, プレイヤー識別子: string): boolean {
+  const 効果 = カード.状態を取得('召喚時_破壊効果');
+  if (!効果) return false;
+
+  const 条件 = 効果.効果追加条件;
+  if (!条件) return false;
+
+  // 条件をチェック
+  if (!条件.存在するか || !条件.存在するか(s.試合.ゲーム, プレイヤー識別子)) {
+    return false;
+  }
+
+  // 対象候補を取得（相手のフィールドからBP3000以下のスピリットを探す）
+  const 相手ID = 相手識別子(プレイヤー識別子);
+  const 相手フィールド = s.試合.ゾーン管理.フィールドを取得(s.試合.ゲーム, 相手ID);
+  if (!相手フィールド) return false;
+
+  const 対象候補一覧 = 相手フィールド
+    .カード一覧を取得()
+    .filter(c => {
+      const BP = s.試合.BP管理.現在のBPを取得(c);
+      return カード種別ルール個体.スピリットか(c) && BP <= 3000;
+    })
+    .map(c => ({
+      識別子: c.識別子,
+      名前: c.名称.表示名,
+      BP: s.試合.BP管理.現在のBPを取得(c),
+    }));
+
+  if (対象候補一覧.length === 0) {
+    return false;
+  }
+
+  s.保留中の効果 = {
+    トリガー元カード識別子: カード.識別子,
+    効果識別子: '召喚時_破壊効果',
+    対象候補一覧,
+    対象選択中: true,
+  };
+
+  return true;
+}
+
 // リザーブのソウルコアをカードに乗せる
 app.post('/api/action/place-soul-core', (req: Request, res: Response) => {
   const s = セッション必須(res);
@@ -576,6 +643,39 @@ app.post('/api/action/place-soul-core', (req: Request, res: Response) => {
   s.試合.Lv管理.Lvを更新(カード, コア管理保持者_カード.コア数を取得(), コア管理保持者_カード.ソウルコアあるか());
   s.試合.ルール処理を実行する();
 
+  人間の手番まで自動進行する(s);
+  res.json({ ok: true, state: 状態を作る(s, as) });
+});
+
+// 効果対象を選択して実行
+app.post('/api/action/select-effect-target', (req: Request, res: Response) => {
+  const s = セッション必須(res);
+  if (!s) return;
+  const { as, targetCardId } = req.body as { as: string; targetCardId: string };
+
+  if (!s.保留中の効果) {
+    return エラー応答(res, '実行中の効果がありません');
+  }
+
+  // 対象候補に含まれているか確認
+  const 対象 = s.保留中の効果.対象候補一覧.find(c => c.識別子 === targetCardId);
+  if (!対象) {
+    return エラー応答(res, '無効な対象です');
+  }
+
+  // 破壊効果を実行
+  const 対象カード = カードを探す(s.試合, targetCardId);
+  if (対象カード && s.保留中の効果.効果識別子 === '召喚時_破壊効果') {
+    // 破壊管理が存在する場合は実行
+    if ((s.試合 as any).破壊管理) {
+      (s.試合 as any).破壊管理.破壊する(対象カード, { 由来: '自分の効果', 効果識別子: '破壊' });
+    }
+  }
+
+  // 効果処理をクリア
+  s.保留中の効果 = null;
+
+  // 自動進行
   人間の手番まで自動進行する(s);
   res.json({ ok: true, state: 状態を作る(s, as) });
 });
