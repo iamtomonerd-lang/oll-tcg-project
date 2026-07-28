@@ -422,6 +422,12 @@ button {
   border-color: var(--core);
 }
 
+.card.waiting-消滅 {
+  opacity: 0.5;
+  border-color: var(--danger, #d9534f);
+  box-shadow: 0 0 0 1px var(--danger, #d9534f);
+}
+
 /* === 手札 === */
 
 .hand {

@@ -187,6 +187,7 @@ function fieldCardEl(card, mode) {
   const div = document.createElement('div');
   div.className = `card state-${card.表示形式}`;
   if (mode) div.classList.add(mode);
+  if (card.待機状態) div.classList.add(`waiting-${card.待機理由}`);
   div.dataset.cardId = card.識別子;
   applyArt(div, card.カードナンバー); // 背景として一番下に積む
 
@@ -259,11 +260,12 @@ function renderZoneRow(prefix, playerState) {
 function renderField(containerId, cards, classify) {
   const container = el(containerId);
   container.innerHTML = '';
-  if (cards.length === 0) {
+  const visibleCards = cards.filter(card => !card.待機状態 || card.待機理由 !== '消滅');
+  if (visibleCards.length === 0) {
     container.innerHTML = '<span class="field-empty">フィールドにカードがありません</span>';
     return;
   }
-  for (const card of cards) {
+  for (const card of visibleCards) {
     const mode = classify ? classify(card) : null;
     const cardEl = fieldCardEl(card, mode);
     if (mode === 'attackable') {
