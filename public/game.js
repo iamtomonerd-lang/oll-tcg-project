@@ -84,7 +84,12 @@ function applyState(state) {
 for (const btn of document.querySelectorAll('.deck-btn')) {
   btn.addEventListener('click', () => {
     selectedDeck = btn.dataset.deck;
-    const deckName = btn.dataset.deck === 'gungata' ? 'グン＝ガタ' : 'ゲン＝ボー';
+    const deckNames = {
+      'gungata': 'グン＝ガタ',
+      'genbo': 'ゲン＝ボー',
+      'mushaako': 'ムーシャッコ',
+    };
+    const deckName = deckNames[btn.dataset.deck] || 'デッキ';
     el('modeEyebrow').textContent = `${deckName}で対戦`;
     showOnly(modeScreen);
   });
