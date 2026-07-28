@@ -383,6 +383,8 @@ function openCoreMove(card) {
     ? `現在${card.コア数}コア／Lv${card.Lv + 1}には合計${card.次のLvに必要な総コア数}コア必要`
     : `現在${card.コア数}コア（最大Lvです）`;
   el('coreMoveAmount').textContent = coreMoveAmount;
+  // ソウルコアを持っていれば、ソウルコア移動ボタンを表示
+  el('coreMoveSoulBtn').hidden = !card.ソウルコア;
   el('coreMovePanel').hidden = false;
 }
 
@@ -399,13 +401,14 @@ el('coreMoveClose').addEventListener('click', () => {
   activeCoreCard = null;
 });
 
-async function moveCore(方向) {
+async function moveCore(方向, ソウルコア = false) {
   if (!activeCoreCard) return;
-  const state = await api('POST', '/api/action/move-core', {
+  const エンドポイント = ソウルコア ? '/api/action/move-soul-core' : '/api/action/move-core';
+  const state = await api('POST', エンドポイント, {
     as: viewer,
     cardId: activeCoreCard.識別子,
     方向,
-    数: coreMoveAmount,
+    数: ソウルコア ? 1 : coreMoveAmount,
   });
   el('coreMovePanel').hidden = true;
   activeCoreCard = null;
@@ -414,6 +417,7 @@ async function moveCore(方向) {
 
 el('coreMoveToCard').addEventListener('click', () => moveCore('toCard'));
 el('coreMoveToReserve').addEventListener('click', () => moveCore('toReserve'));
+el('coreMoveSoulBtn').addEventListener('click', () => moveCore('toReserve', true));
 
 // === カード効果情報 ===
 
