@@ -713,6 +713,13 @@ button {
   font-weight: 700;
 }
 
+/* 起動効果パネルは対象選択と重ならないよう左寄せに置く */
+.popover-activate {
+  width: min(380px, calc(100vw - 32px));
+  left: 16px;
+  transform: none;
+}
+
 .card.effect-selected {
   border-color: var(--core-strong);
   box-shadow: 0 0 0 3px var(--core), 0 0 24px -4px var(--core-strong);

@@ -286,6 +286,12 @@ function renderField(containerId, cards, classify) {
 // 効果の対象選択で、今どのカードを選んでいるか
 let effectSelection = [];
 
+// 【起動】効果を撃つ
+async function activateEffect(effectId) {
+  const state = await api('POST', '/api/action/activate-effect', { as: viewer, effectId });
+  applyState(state);
+}
+
 async function submitEffectSelection(cardIds) {
   effectSelection = [];
   const state = await api('POST', '/api/action/select-effect-target', {
@@ -313,6 +319,26 @@ function toggleEffectTarget(cardId, pending) {
 function renderBoard(state) {
   renderZoneRow('foe', state.相手);
   renderZoneRow('self', state.自分);
+
+  // 今撃てる【起動】効果があればボタンとして並べる
+  const activatable = state.発動できる起動効果 || [];
+  const activatePanel = el('activatePanel');
+  if (activatable.length > 0) {
+    activatePanel.hidden = false;
+    const 一覧 = el('activateList');
+    一覧.innerHTML = '';
+    for (const 効果 of activatable) {
+      const btn = document.createElement('button');
+      btn.className = 'effect-target-btn';
+      const タイミング = 効果.タイミング ? `［${効果.タイミング}］` : '';
+      btn.textContent = `${効果.カード名}${タイミング}`;
+      btn.title = 効果.テキスト;
+      btn.addEventListener('click', () => activateEffect(効果.効果識別子));
+      一覧.appendChild(btn);
+    }
+  } else {
+    activatePanel.hidden = true;
+  }
 
   // 効果が対象選択で止まっていれば、その案内と候補を出す
   const pending = state.保留中の効果;
