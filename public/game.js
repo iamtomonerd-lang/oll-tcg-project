@@ -273,47 +273,88 @@ function renderField(containerId, cards, classify) {
       cardEl.addEventListener('click', () => doAttack(card.識別子));
     } else if (mode === 'editable') {
       cardEl.addEventListener('click', () => openCoreMove(card));
-    } else if (mode === 'effect-target') {
-      cardEl.addEventListener('click', () => selectEffectTarget(card.識別子));
+    } else if (mode === 'effect-target' || mode === 'effect-selected') {
+      const pending = lastState && lastState.保留中の効果;
+      if (pending) {
+        cardEl.addEventListener('click', () => toggleEffectTarget(card.識別子, pending));
+      }
     }
     container.appendChild(cardEl);
   }
 }
 
-async function selectEffectTarget(cardId) {
-  const state = await api('POST', '/api/action/select-effect-target', { as: viewer, targetCardId: cardId });
+// 効果の対象選択で、今どのカードを選んでいるか
+let effectSelection = [];
+
+async function submitEffectSelection(cardIds) {
+  effectSelection = [];
+  const state = await api('POST', '/api/action/select-effect-target', {
+    as: viewer,
+    targetCardIds: cardIds,
+  });
   applyState(state);
+}
+
+// 1体だけ選ぶ効果ならクリックで即決、複数選ぶ効果なら選択を貯めて確定ボタンで送る
+function toggleEffectTarget(cardId, pending) {
+  if (pending.最大 === 1 && pending.最小 === 1) {
+    submitEffectSelection([cardId]);
+    return;
+  }
+  const 既に選択中 = effectSelection.indexOf(cardId);
+  if (既に選択中 >= 0) {
+    effectSelection.splice(既に選択中, 1);
+  } else if (effectSelection.length < pending.最大) {
+    effectSelection.push(cardId);
+  }
+  renderBoard(lastState);
 }
 
 function renderBoard(state) {
   renderZoneRow('foe', state.相手);
   renderZoneRow('self', state.自分);
 
-  // 保留中の効果がある場合、対象選択UIを表示
+  // 効果が対象選択で止まっていれば、その案内と候補を出す
+  const pending = state.保留中の効果;
   const effectPanel = el('effectPanel');
-  if (state.保留中の効果) {
+  if (pending) {
     effectPanel.hidden = false;
-    const effectTitle = el('effectTitle');
-    effectTitle.textContent = '効果対象を選択してください';
+
+    const 何体 = pending.最小 === pending.最大
+      ? `${pending.最大}体`
+      : `${pending.最小}〜${pending.最大}体`;
+    el('effectTitle').textContent = `${pending.トリガー元カード名} の効果`;
+    el('effectHint').textContent = pending.任意
+      ? `対象を${何体}まで選べます（選ばなくてもかまいません）`
+      : `対象を${何体}選んでください`;
 
     const 対象一覧 = el('effectTargetList');
     対象一覧.innerHTML = '';
-    for (const 対象 of state.保留中の効果.対象候補一覧) {
+    for (const 対象 of pending.対象候補一覧) {
       const btn = document.createElement('button');
-      btn.className = 'effect-target-btn';
-      btn.textContent = `${対象.名前} (BP: ${対象.BP})`;
-      btn.addEventListener('click', () => selectEffectTarget(対象.識別子));
+      const 選択中 = effectSelection.includes(対象.識別子);
+      btn.className = 選択中 ? 'effect-target-btn selected' : 'effect-target-btn';
+      btn.textContent = `${対象.名前}（BP ${対象.BP.toLocaleString()}）`;
+      btn.addEventListener('click', () => toggleEffectTarget(対象.識別子, pending));
       対象一覧.appendChild(btn);
     }
+
+    // 複数選ぶ効果には確定ボタン、任意の効果には見送りボタンを出す
+    const 複数選択 = pending.最大 > 1 || pending.最小 !== pending.最大;
+    const 確定ボタン = el('effectConfirm');
+    確定ボタン.hidden = !複数選択;
+    確定ボタン.disabled = effectSelection.length < pending.最小;
+    確定ボタン.textContent = `決定（${effectSelection.length}/${pending.最大}）`;
+
+    el('effectSkip').hidden = pending.最小 > 0;
   } else {
     effectPanel.hidden = true;
+    effectSelection = [];
   }
 
-  renderField('foeField', state.相手.フィールド, (card) => {
-    // 保留中の効果があり、このカードが対象候補の場合はハイライト
-    if (state.保留中の効果) {
-      const 対象 = state.保留中の効果.対象候補一覧.find(c => c.識別子 === card.識別子);
-      if (対象) return 'effect-target';
+  renderField('foeField', state.相手.フィールド, card => {
+    if (pending && pending.対象候補一覧.some(c => c.識別子 === card.識別子)) {
+      return effectSelection.includes(card.識別子) ? 'effect-selected' : 'effect-target';
     }
     return null;
   });
@@ -325,6 +366,9 @@ function renderBoard(state) {
     自分のターンで随意ステップ && (state.ステップ === 'メインステップ' || state.ステップ === '第2メインステップ');
 
   renderField('selfField', state.自分.フィールド, card => {
+    if (pending && pending.対象候補一覧.some(c => c.識別子 === card.識別子)) {
+      return effectSelection.includes(card.識別子) ? 'effect-selected' : 'effect-target';
+    }
     if (アタックステップ中 && card.表示形式 === '回復') return 'attackable';
     if (メインステップ中) return 'editable';
     return null;
@@ -477,6 +521,15 @@ function showCardEffect(card) {
   el('cardEffectText').textContent = card.テキスト || '効果なし';
   el('cardEffectPanel').hidden = false;
 }
+
+el('effectConfirm').addEventListener('click', () => {
+  const pending = lastState && lastState.保留中の効果;
+  if (pending && effectSelection.length >= pending.最小) {
+    submitEffectSelection([...effectSelection]);
+  }
+});
+
+el('effectSkip').addEventListener('click', () => submitEffectSelection([]));
 
 el('cardEffectClose').addEventListener('click', () => {
   el('cardEffectPanel').hidden = true;

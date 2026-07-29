@@ -47,20 +47,12 @@ interface 保留中の攻撃 {
   防御側識別子: string;
 }
 
-interface 保留中の効果 {
-  トリガー元カード識別子: string;
-  効果識別子: string;
-  対象候補一覧: { 識別子: string; 名前: string }[];
-  対象選択中: boolean;
-}
-
 interface セッション {
   モード: モード;
   試合: 試合;
   AIマップ: Map<string, 練習用AI>;
   保留中の攻撃: 保留中の攻撃 | null;
   攻撃ステップ初期化済み: boolean;
-  保留中の効果: 保留中の効果 | null;
 }
 
 let セッション: セッション | null = null;
@@ -118,7 +110,7 @@ function 新しい試合を作る(モード: モード, デッキタイプ: デ�
     AIマップ.set('p2', new 練習用AI('p2', 'p1'));
   }
 
-  return { モード, 試合: 試合インスタンス, AIマップ, 保留中の攻撃: null, 攻撃ステップ初期化済み: false, 保留中の効果: null };
+  return { モード, 試合: 試合インスタンス, AIマップ, 保留中の攻撃: null, 攻撃ステップ初期化済み: false };
 }
 
 function カードを探す(試合インスタンス: 試合, 識別子: string): カード | null {
@@ -327,6 +319,48 @@ function プレイヤー状態を作る(s: セッション, プレイヤー識�
   };
 }
 
+// 効果が対象選択で止まっているとき、その情報を画面向けに整える。
+// 待っているのは効果の持ち主なので、視点が違うプレイヤーには見せない。
+function 保留中の効果を表示用に(s: セッション, 視点: string) {
+  const 情報 = s.試合.効果実行器.選択待ち情報を取得();
+  if (!情報) {
+    return null;
+  }
+  const 持ち主 = カードの持ち主を探す(s.試合, 情報.発揮源.識別子);
+  if (持ち主 !== 視点) {
+    return null;
+  }
+  return {
+    トリガー元カード識別子: 情報.発揮源.識別子,
+    トリガー元カード名: 情報.発揮源.名称.表示名,
+    効果識別子: 情報.効果識別子,
+    最小: 情報.最小,
+    最大: 情報.最大,
+    任意: 情報.任意,
+    対象候補一覧: 情報.候補.map(c => ({
+      識別子: c.識別子,
+      名前: c.名称.表示名,
+      BP: s.試合.BP管理.現在のBPを取得(c),
+    })),
+    対象選択中: true,
+  };
+}
+
+function カードの持ち主を探す(試合インスタンス: 試合, カード識別子: string): string | null {
+  for (const プレイヤー of 試合インスタンス.ゲーム.全プレイヤーを取得()) {
+    const 領域一覧 = 試合インスタンス.ゾーン管理.プレイヤーの全領域を取得(
+      試合インスタンス.ゲーム,
+      プレイヤー.識別子
+    );
+    for (const 領域 of 領域一覧) {
+      if (領域.カードを取得(カード識別子)) {
+        return プレイヤー.識別子;
+      }
+    }
+  }
+  return null;
+}
+
 function 状態を作る(s: セッション, 視点: string) {
   const 相手 = 相手識別子(視点);
   const ターンプレイヤー識別子 = s.試合.ゲーム.現在のプレイヤーを取得()?.識別子 ?? null;
@@ -349,12 +383,7 @@ function 状態を作る(s: セッション, 視点: string) {
     実行者識別子,
     自分が実行者か: 実行者識別子 === 視点,
     保留中のブロック,
-    保留中の効果: s.保留中の効果 ? {
-      トリガー元カード識別子: s.保留中の効果.トリガー元カード識別子,
-      効果識別子: s.保留中の効果.効果識別子,
-      対象候補一覧: s.保留中の効果.対象候補一覧,
-      対象選択中: s.保留中の効果.対象選択中,
-    } : null,
+    保留中の効果: 保留中の効果を表示用に(s, 視点),
     自分: プレイヤー状態を作る(s, 視点, true),
     相手: プレイヤー状態を作る(s, 相手, true),
   };
@@ -437,17 +466,12 @@ app.post('/api/action/summon', (req: Request, res: Response) => {
   );
   if (!成功) return エラー応答(res, '召喚に失敗しました');
 
-  // 召喚時効果をトリガーするか判定
-  召喚時効果をトリガーする(s, カード, as);
-
-  if (s.保留中の効果) {
-    // 効果トリガー待ち：状態を返して対象選択待ち
-    res.json({ ok: true, state: 状態を作る(s, as) });
-  } else {
-    // 効果がない、または条件を満たさない：自動進行
+  // 『召喚時』効果は 試合.召喚する の中で誘発済み。
+  // 対象選択が要る効果なら実行器が選択待ちで止まっているので、そこで一旦返す。
+  if (!s.試合.効果実行器.選択待ちか()) {
     人間の手番まで自動進行する(s);
-    res.json({ ok: true, state: 状態を作る(s, as) });
   }
+  res.json({ ok: true, state: 状態を作る(s, as) });
 });
 
 app.post('/api/action/attack', (req: Request, res: Response) => {
@@ -577,50 +601,6 @@ app.post('/api/action/move-soul-core', (req: Request, res: Response) => {
   res.json({ ok: true, state: 状態を作る(s, as) });
 });
 
-// 召喚時効果をトリガーするか判定し、対象候補を取得
-function 召喚時効果をトリガーする(s: セッション, カード: カード, プレイヤー識別子: string): boolean {
-  const 効果 = カード.状態を取得('召喚時_破壊効果');
-  if (!効果) return false;
-
-  const 条件 = 効果.効果追加条件;
-  if (!条件) return false;
-
-  // 条件をチェック
-  if (!条件.存在するか || !条件.存在するか(s.試合.ゲーム, プレイヤー識別子)) {
-    return false;
-  }
-
-  // 対象候補を取得（相手のフィールドからBP3000以下のスピリットを探す）
-  const 相手ID = 相手識別子(プレイヤー識別子);
-  const 相手フィールド = s.試合.ゾーン管理.フィールドを取得(s.試合.ゲーム, 相手ID);
-  if (!相手フィールド) return false;
-
-  const 対象候補一覧 = 相手フィールド
-    .カード一覧を取得()
-    .filter(c => {
-      const BP = s.試合.BP管理.現在のBPを取得(c);
-      return カード種別ルール個体.スピリットか(c) && BP <= 3000;
-    })
-    .map(c => ({
-      識別子: c.識別子,
-      名前: c.名称.表示名,
-      BP: s.試合.BP管理.現在のBPを取得(c),
-    }));
-
-  if (対象候補一覧.length === 0) {
-    return false;
-  }
-
-  s.保留中の効果 = {
-    トリガー元カード識別子: カード.識別子,
-    効果識別子: '召喚時_破壊効果',
-    対象候補一覧,
-    対象選択中: true,
-  };
-
-  return true;
-}
-
 // リザーブのソウルコアをカードに乗せる
 app.post('/api/action/place-soul-core', (req: Request, res: Response) => {
   const s = セッション必須(res);
@@ -657,36 +637,29 @@ app.post('/api/action/place-soul-core', (req: Request, res: Response) => {
   res.json({ ok: true, state: 状態を作る(s, as) });
 });
 
-// 効果対象を選択して実行
+// 効果の対象選択に答える
 app.post('/api/action/select-effect-target', (req: Request, res: Response) => {
   const s = セッション必須(res);
   if (!s) return;
-  const { as, targetCardId } = req.body as { as: string; targetCardId: string };
+  const { as, targetCardIds, targetCardId } = req.body as {
+    as: string;
+    targetCardIds?: string[];
+    targetCardId?: string;
+  };
 
-  if (!s.保留中の効果) {
-    return エラー応答(res, '実行中の効果がありません');
+  if (!s.試合.効果実行器.選択待ちか()) {
+    return エラー応答(res, '選択待ちの効果はありません');
   }
 
-  // 対象候補に含まれているか確認
-  const 対象 = s.保留中の効果.対象候補一覧.find(c => c.識別子 === targetCardId);
-  if (!対象) {
-    return エラー応答(res, '無効な対象です');
+  // 1体選択（targetCardId）と複数選択（targetCardIds）の両方を受け付ける。
+  // 「指定できる」効果で何も選ばない場合は空配列を送る。
+  const 選択 = targetCardIds ?? (targetCardId ? [targetCardId] : []);
+
+  const 進行 = s.試合.効果実行器.選択に答える(選択);
+  if (進行.状態 === 'アイドル') {
+    人間の手番まで自動進行する(s);
   }
 
-  // 破壊効果を実行
-  const 対象カード = カードを探す(s.試合, targetCardId);
-  if (対象カード && s.保留中の効果.効果識別子 === '召喚時_破壊効果') {
-    // 破壊管理が存在する場合は実行
-    if ((s.試合 as any).破壊管理) {
-      (s.試合 as any).破壊管理.破壊する(対象カード, { 由来: '自分の効果', 効果識別子: '破壊' });
-    }
-  }
-
-  // 効果処理をクリア
-  s.保留中の効果 = null;
-
-  // 自動進行
-  人間の手番まで自動進行する(s);
   res.json({ ok: true, state: 状態を作る(s, as) });
 });
 

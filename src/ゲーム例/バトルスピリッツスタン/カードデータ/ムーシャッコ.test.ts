@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
+import { 効果ルール } from '../カードの情報/効果.js';
 import { ムーシャッコを作成 } from './ムーシャッコ.js';
 import { カード名ルール } from '../カードの情報/カード名.js';
 import { カードナンバールール } from '../カードの情報/カードナンバー.js';
@@ -21,10 +22,15 @@ test('ムーシャッコのレベル情報が正しく設定されている', ()
   assert.deepEqual(Lv一覧[1], { level: 2, cost: 2, bp: 3000 });
 });
 
-test('ムーシャッコにバトル終了時の効果が設定されている', () => {
+test('ムーシャッコにバトル終了時の効果がデータとして宣言されている', () => {
   const カード = ムーシャッコを作成('test-mushaako-3');
-  const 効果 = カード.状態を取得('バトル終了時_ドロー効果');
-  assert.ok(効果, 'バトル終了時の効果が設定されるべき');
-  assert.equal(効果.発動Lv, 2, 'Lv2で発動するべき');
-  assert.equal(効果.発動タイミング, 'バトル終了時', 'バトル終了時に発動するべき');
+  const 効果一覧 = new 効果ルール().効果を取得(カード);
+
+  assert.equal(効果一覧.length, 1, '効果が1つ宣言されているべき');
+  const 効果 = 効果一覧[0];
+  assert.deepEqual(効果.Lv, [2], 'Lv2で発動するべき');
+  assert.equal(効果.トリガー, 'バトル終了時', 'バトル終了時に発動するべき');
+  assert.equal(効果.状態, 'アタック中', 'アタック中であることを要求するべき');
+  assert.deepEqual(効果.条件, { 数量: { 場: '自分', ゾーン: '手札', 以下: 5 } });
+  assert.deepEqual(効果.処理, [{ ドロー: 1 }]);
 });

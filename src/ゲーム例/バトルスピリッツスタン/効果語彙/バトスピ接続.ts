@@ -6,7 +6,7 @@
 
 import { カード } from '../../../データ/カード/カード.js';
 import { ゾーン } from '../../../データ/ゾーン/ゾーン.js';
-import { 試合 } from '../試合.js';
+import type { 試合 } from '../試合.js';
 import {
   アクション結果,
   ゲーム接続,

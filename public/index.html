@@ -166,11 +166,15 @@
     <button id="blockSkip" class="btn-outline" type="button">ブロックしない</button>
   </div>
 
-  <!-- 効果発動 -->
+  <!-- 効果の対象選択 -->
   <div id="effectPanel" class="popover" hidden>
-    <p class="popover-title" id="effectTitle">効果対象を選択してください</p>
-    <p class="popover-hint">対象を選んでください</p>
+    <p class="popover-title" id="effectTitle">効果</p>
+    <p class="popover-hint" id="effectHint">対象を選んでください</p>
     <div id="effectTargetList" class="effect-target-list"></div>
+    <div class="popover-actions">
+      <button id="effectConfirm" class="btn-solid" type="button" hidden>決定</button>
+      <button id="effectSkip" class="btn-outline" type="button" hidden>選ばない</button>
+    </div>
   </div>
 
   <div id="toast" class="toast" hidden></div>

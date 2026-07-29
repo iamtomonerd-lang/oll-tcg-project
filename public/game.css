@@ -706,6 +706,18 @@ button {
   transform: scale(0.98);
 }
 
+.effect-target-btn.selected {
+  background: var(--core);
+  border-color: var(--core-strong);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.card.effect-selected {
+  border-color: var(--core-strong);
+  box-shadow: 0 0 0 3px var(--core), 0 0 24px -4px var(--core-strong);
+}
+
 .card.effect-target {
   border-color: var(--core-strong);
   box-shadow: 0 0 0 2px var(--core-soft), 0 0 20px -4px var(--core);
