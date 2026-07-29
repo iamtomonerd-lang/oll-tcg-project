@@ -114,8 +114,7 @@ export function 効果の選択待ちを解消する(
     return false;
   }
 
-  const 持ち主 = 効果の持ち主を求める(試合インスタンス, 情報.発揮源.識別子);
-  const AI = 持ち主 ? AIマップ.get(持ち主) : undefined;
+  const AI = AIマップ.get(情報.所有者識別子);
   if (!AI) {
     return false; // 人間の判断待ち。呼び出し側が制御を返す。
   }

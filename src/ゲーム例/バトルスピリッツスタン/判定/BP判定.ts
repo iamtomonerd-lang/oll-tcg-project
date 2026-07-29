@@ -26,7 +26,7 @@ export class BP判定 {
       return 0;
     }
 
-    return Lv情報.bp;
+    return Lv情報.bp ?? 0;
   }
 
   最大BPを計算(カード: カード): number {
@@ -37,7 +37,7 @@ export class BP判定 {
     }
 
     const 最大Lv情報 = Lv情報配列[Lv情報配列.length - 1];
-    return 最大Lv情報.bp;
+    return 最大Lv情報.bp ?? 0;
   }
 
   最小BPを計算(カード: カード): number {
@@ -48,6 +48,6 @@ export class BP判定 {
     }
 
     const 最小Lv情報 = Lv情報配列[0];
-    return 最小Lv情報.bp;
+    return 最小Lv情報.bp ?? 0;
   }
 }

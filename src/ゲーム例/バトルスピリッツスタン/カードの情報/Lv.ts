@@ -3,7 +3,8 @@ import { カード } from '../../../データ/カード/カード.js';
 export interface Lv情報 {
   level: number;
   cost: number;
-  bp: number;
+  // ネクサスはLvを持つがBPを持たないため省略できる（スピリットでは必須と考えてよい）
+  bp?: number;
   真界放?: boolean;
 }
 
@@ -39,7 +40,7 @@ export class Lvルール {
   }
 
   LvのBPを取得(Lv情報: Lv情報): number {
-    return Lv情報.bp;
+    return Lv情報.bp ?? 0;
   }
 
   Lvコストを満たしているか(Lv情報: Lv情報, コア数: number): boolean {

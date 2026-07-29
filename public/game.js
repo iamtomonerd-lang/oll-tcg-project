@@ -394,7 +394,7 @@ function renderBoard(state) {
     if (pending && pending.対象候補一覧.some(c => c.識別子 === card.識別子)) {
       return effectSelection.includes(card.識別子) ? 'effect-selected' : 'effect-target';
     }
-    if (アタックステップ中 && card.表示形式 === '回復') return 'attackable';
+    if (アタックステップ中 && card.種別 === 'スピリット' && card.表示形式 === '回復') return 'attackable';
     if (メインステップ中) return 'editable';
     return null;
   });
@@ -413,7 +413,7 @@ function renderBoard(state) {
     const playable = メインステップ中 && card.支払可能;
     const cardEl = handCardEl(card, card.支払可能);
     if (playable) {
-      cardEl.addEventListener('click', () => doSummon(card.識別子));
+      cardEl.addEventListener('click', () => doPlayCard(card));
     }
     selfHand.appendChild(cardEl);
   }
@@ -436,7 +436,9 @@ function renderBoard(state) {
     attackerHost.innerHTML = '';
     attackerHost.appendChild(fieldCardEl(state.保留中のブロック.攻撃者, null));
 
-    const candidates = state.自分.フィールド.filter(c => c.表示形式 === '回復');
+    const candidates = state.自分.フィールド.filter(
+      c => c.種別 === 'スピリット' && c.表示形式 === '回復'
+    );
     renderField('blockCandidates', candidates, () => 'blockable');
     const candidateContainer = el('blockCandidates');
     for (const cardEl of candidateContainer.children) {
@@ -454,8 +456,14 @@ function renderBoard(state) {
 
 // === アクション ===
 
-async function doSummon(cardId) {
-  const state = await api('POST', '/api/action/summon', { as: viewer, cardId });
+// 手札のカードは種別ごとに出し方が違う。
+// スピリットは召喚、ネクサスは配置、マジックは使用。
+async function doPlayCard(card) {
+  const 送り先 =
+    card.種別 === 'ネクサス' ? '/api/action/place'
+    : card.種別 === 'マジック' ? '/api/action/use'
+    : '/api/action/summon';
+  const state = await api('POST', 送り先, { as: viewer, cardId: card.識別子 });
   applyState(state);
 }
 
