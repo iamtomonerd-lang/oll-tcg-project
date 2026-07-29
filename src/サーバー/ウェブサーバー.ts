@@ -60,7 +60,7 @@ let セッション: セッション | null = null;
 
 const 相手識別子 = (識別子: string): string => (識別子 === 'p1' ? 'p2' : 'p1');
 
-type デッキタイプ = 'gungata' | 'genbo' | 'mushaako';
+type デッキタイプ = 'gungata' | 'genbo' | 'mushaako' | 'effect';
 
 function グンガタデッキを作成(接頭辞: string, 枚数 = 20): カード[] {
   const カード一覧: カード[] = [];
@@ -83,12 +83,33 @@ function ムーシャッコデッキを作成(接頭辞: string, 枚数 = 20): �
   return Array.from({ length: 枚数 }, (_, i) => ムーシャッコを作成(`${接頭辞}-mushaako-${i + 1}`));
 }
 
+// 効果を確かめるためのデッキ。
+// BPが低いカードだけで構成してあるので、ロワミークの「BP3000以下の相手」が
+// 対象を見つけやすく、召喚時効果が実際に発動する場面に入りやすい。
+function 効果デッキを作成(接頭辞: string, 枚数 = 20): カード[] {
+  const カード一覧: カード[] = [];
+  for (let i = 0; i < 枚数; i++) {
+    const 識別子 = `${接頭辞}-effect-${i + 1}`;
+    if (i % 3 === 0) {
+      カード一覧.push(ロワミークを作成(識別子));
+    } else if (i % 3 === 1) {
+      カード一覧.push(ムーシャッコを作成(識別子));
+    } else {
+      カード一覧.push(ゲン_ボーを作成(識別子));
+    }
+  }
+  return カード一覧;
+}
+
 function デッキを作成(接頭辞: string, タイプ: デッキタイプ): カード[] {
   if (タイプ === 'genbo') {
     return ゲン_ボーデッキを作成(接頭辞);
   }
   if (タイプ === 'mushaako') {
     return ムーシャッコデッキを作成(接頭辞);
+  }
+  if (タイプ === 'effect') {
+    return 効果デッキを作成(接頭辞);
   }
   return グンガタデッキを作成(接頭辞);
 }
@@ -448,10 +469,8 @@ app.post('/api/game/start', (req: Request, res: Response) => {
     return;
   }
   let デッキタイプ: デッキタイプ = 'gungata';
-  if (deck === 'genbo') {
-    デッキタイプ = 'genbo';
-  } else if (deck === 'mushaako') {
-    デッキタイプ = 'mushaako';
+  if (deck === 'genbo' || deck === 'mushaako' || deck === 'effect') {
+    デッキタイプ = deck;
   }
   セッション = 新しい試合を作る(mode, デッキタイプ);
   人間の手番まで自動進行する(セッション);
@@ -722,8 +741,15 @@ app.post('/api/action/activate-effect', (req: Request, res: Response) => {
   res.json({ ok: true, state: 状態を作る(s, as) });
 });
 
-app.listen(ポート, () => {
-  console.log(`\n🎮 バトルスピリッツ・スタン サーバーが起動しました！`);
-  console.log(`   http://localhost:${ポート}`);
-  console.log(`   同じネットワーク内の別端末からは http://<このマシンのIP>:${ポート}\n`);
-});
+// テストから読み込んで叩けるよう、アプリ本体は公開し、
+// 待ち受けはこのファイルを直接実行したときだけ行う。
+export { app };
+
+const 直接実行されたか = process.argv[1] === fileURLToPath(import.meta.url);
+if (直接実行されたか) {
+  app.listen(ポート, () => {
+    console.log(`\n🎮 バトルスピリッツ・スタン サーバーが起動しました！`);
+    console.log(`   http://localhost:${ポート}`);
+    console.log(`   同じネットワーク内の別端末からは http://<このマシンのIP>:${ポート}\n`);
+  });
+}

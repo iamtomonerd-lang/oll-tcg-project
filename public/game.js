@@ -177,7 +177,6 @@ function artURL(cardNumber) {
 function applyArt(div, cardNumber) {
   const art = artURL(cardNumber);
   if (!art) return;
-  div.classList.add('has-art');
   const artLayer = document.createElement('div');
   artLayer.className = 'card-art';
   artLayer.style.backgroundImage = `url('${art}')`;
@@ -578,7 +577,6 @@ function showCardDetail(card) {
   // 背景として絵柄を積む
   const art = artURL(card.カードナンバー);
   if (art) {
-    cardEl.classList.add('has-art');
     const artLayer = document.createElement('div');
     artLayer.className = 'card-art';
     artLayer.style.backgroundImage = `url('${art}')`;
