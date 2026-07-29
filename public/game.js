@@ -319,6 +319,20 @@ function renderBoard(state) {
   renderZoneRow('foe', state.相手);
   renderZoneRow('self', state.自分);
 
+  // バトル中の割り込みの窓。効果を撃つか、何もしないかを選ぶ。
+  const flash = state.保留中のフラッシュ;
+  const flashPanel = el('flashPanel');
+  if (flash) {
+    flashPanel.hidden = false;
+    const 場面 = flash.段階 === 'ブロック後' ? 'ブロックが宣言されました' : 'アタックが宣言されました';
+    const 相手 = flash.ブロッカー名
+      ? `${flash.攻撃者名} が ${flash.ブロッカー名} にブロックされています`
+      : `${flash.攻撃者名} がアタックしています`;
+    el('flashHint').textContent = `${場面}。${相手}。効果を使うなら今です。`;
+  } else {
+    flashPanel.hidden = true;
+  }
+
   // 今撃てる【起動】効果があればボタンとして並べる
   const activatable = state.発動できる起動効果 || [];
   const activatePanel = el('activatePanel');
@@ -563,6 +577,11 @@ el('effectConfirm').addEventListener('click', () => {
 });
 
 el('effectSkip').addEventListener('click', () => submitEffectSelection([]));
+
+el('flashPass').addEventListener('click', async () => {
+  const state = await api('POST', '/api/action/flash-pass', { as: viewer });
+  applyState(state);
+});
 
 el('cardEffectClose').addEventListener('click', () => {
   el('cardEffectPanel').hidden = true;

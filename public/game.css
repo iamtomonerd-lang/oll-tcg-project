@@ -713,6 +713,10 @@ button {
   font-weight: 700;
 }
 
+.popover-flash {
+  width: min(420px, calc(100vw - 32px));
+}
+
 /* 起動効果パネルは対象選択と重ならないよう左寄せに置く */
 .popover-activate {
   width: min(380px, calc(100vw - 32px));
