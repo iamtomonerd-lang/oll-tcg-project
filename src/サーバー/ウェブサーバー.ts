@@ -220,7 +220,7 @@ function 人間の手番まで自動進行する(s: セッション): void {
         s.試合.ステップを終了する();
         continue;
       }
-      const 宣言成功 = s.試合.バトル管理.アタック宣言(s.試合.ゲーム, アタッカー);
+      const 宣言成功 = s.試合.アタック宣言する(アタッカー);
       if (!宣言成功) {
         s.試合.ステップを終了する();
         continue;
@@ -487,7 +487,7 @@ app.post('/api/action/attack', (req: Request, res: Response) => {
   const アタッカー = カードを探す(s.試合, cardId);
   if (!アタッカー) return エラー応答(res, 'カードが見つかりません');
 
-  const 宣言成功 = s.試合.バトル管理.アタック宣言(s.試合.ゲーム, アタッカー);
+  const 宣言成功 = s.試合.アタック宣言する(アタッカー);
   if (!宣言成功) return エラー応答(res, 'このスピリットは攻撃できません');
 
   攻撃を宣言する(s, cardId, as);
