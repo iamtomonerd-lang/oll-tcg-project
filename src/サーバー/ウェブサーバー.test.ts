@@ -405,7 +405,7 @@ test('APIを通した自動対戦', async t => {
     const 合計: Record<string, number> = {};
     let 決着数 = 0;
     for (const 種 of [11, 22, 33, 44, 55, 66]) {
-      const 結果 = await 自動で対戦する('vsHuman', 'purple', 種);
+      const 結果 = await 自動で対戦する('vsHuman', 'purple', 種, 1200);
       if (結果.決着した) {
         決着数++;
       }
