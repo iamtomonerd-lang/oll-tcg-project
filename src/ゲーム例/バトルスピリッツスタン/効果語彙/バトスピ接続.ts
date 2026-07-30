@@ -206,6 +206,9 @@ export class バトスピ接続 implements ゲーム接続 {
   // === 条件 ===
 
   条件を評価(条件: 発動条件, 文脈: 実行文脈): boolean {
+    if ('かつ' in 条件) {
+      return 条件.かつ.every(c => this.条件を評価(c, 文脈));
+    }
     if ('自身' in 条件) {
       return this.合致するか(文脈.自身, 条件.自身, 文脈);
     }

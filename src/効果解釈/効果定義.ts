@@ -94,6 +94,11 @@ export interface 履歴条件 {
   履歴: string;
 }
 
+// 複数の条件を AND で結合（「条件1 かつ 条件2」）
+export interface AND条件 {
+  かつ: 発動条件[];
+}
+
 export type 発動条件 =
   | 存在条件
   | 不在条件
@@ -102,7 +107,8 @@ export type 発動条件 =
   | 自身条件
   | 消滅条件
   | 直前成功条件
-  | 履歴条件;
+  | 履歴条件
+  | AND条件;
 
 // === 選択 ===
 
