@@ -10,6 +10,9 @@ export interface コア保持者 {
   ソウルコアあるか(): boolean;
   ソウルコアを設定(ある: boolean): void;
   制限付き配置先か(): boolean;         // 5-7-3：ソウルコアの配置が制限される先（ライフ／ボイド）か
+  // コアが乗っているカード（ゾーンなら undefined）。
+  // コア数が変わった後にLvを更新し直す相手を知るために使う。
+  対象のカード(): カード | undefined;
 }
 
 // ゾーン用アダプタ（コア数は状態Mapに保存）
@@ -37,6 +40,10 @@ export class ゾーンコア保持者 implements コア保持者 {
     const キー = this.ゾーン.名称.識別子;
     return キー === 'ライフ' || キー === 'ボイド';
   }
+
+  対象のカード(): カード | undefined {
+    return undefined;
+  }
 }
 
 // カード用アダプタ（コア数は数値Map、ソウルコアの有無は状態Mapに保存）
@@ -61,5 +68,9 @@ export class カードコア保持者 implements コア保持者 {
 
   制限付き配置先か(): boolean {
     return false; // カードはライフ／ボイドではない
+  }
+
+  対象のカード(): カード | undefined {
+    return this.カード;
   }
 }

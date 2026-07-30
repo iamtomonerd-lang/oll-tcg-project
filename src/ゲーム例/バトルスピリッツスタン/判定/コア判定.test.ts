@@ -26,6 +26,9 @@ class テスト用コア保持者 implements コア保持者 {
   制限付き配置先か(): boolean {
     return this._制限付き;
   }
+  対象のカード(): undefined {
+    return undefined; // このテスト用保持者はカードに紐づかない
+  }
 }
 
 test('総コア数を取得 はソウルコアを含む総数をそのまま返す', () => {

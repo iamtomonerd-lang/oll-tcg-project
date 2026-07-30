@@ -315,7 +315,7 @@ test('APIを通した自動対戦', async t => {
   });
 
   await t.test('どのデッキでも成立する', async () => {
-    for (const デッキ of ['gungata', 'genbo', 'mushaako', 'effect']) {
+    for (const デッキ of ['gungata', 'genbo', 'mushaako', 'effect', 'purple']) {
       const 結果 = await 自動で対戦する('vsAI', デッキ, 2024);
       assert.equal(結果.決着した, true, `デッキ=${デッキ} で決着しなかった`);
     }
@@ -336,6 +336,30 @@ test('APIを通した自動対戦', async t => {
       assert.ok(
         (合計[操作] ?? 0) > 0,
         `${操作} を一度も通らなかった（テストが素通りしている）／内訳: ${JSON.stringify(合計)}`
+      );
+    }
+  });
+
+  // 新しく足したカード群も、実際の対戦で効果の道を通ることを確かめる。
+  // 「型が通った」「単体テストが通った」だけでは、盤面で本当に動いた証拠にならない。
+  await t.test('紫デッキでも効果の道を実際に通る', async () => {
+    const 合計: Record<string, number> = {};
+    let 決着数 = 0;
+    for (const 種 of [11, 22, 33, 44, 55, 66]) {
+      const 結果 = await 自動で対戦する('vsHuman', 'purple', 種);
+      if (結果.決着した) {
+        決着数++;
+      }
+      for (const [名前, 回数] of Object.entries(結果.操作の内訳)) {
+        合計[名前] = (合計[名前] ?? 0) + 回数;
+      }
+    }
+
+    assert.equal(決着数, 6, `紫デッキで決着しない対戦があった／内訳: ${JSON.stringify(合計)}`);
+    for (const 操作 of ['召喚', '配置', '使用', 'アタック', '選択']) {
+      assert.ok(
+        (合計[操作] ?? 0) > 0,
+        `紫デッキで ${操作} を一度も通らなかった／内訳: ${JSON.stringify(合計)}`
       );
     }
   });

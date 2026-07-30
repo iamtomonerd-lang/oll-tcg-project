@@ -12,6 +12,7 @@ import { ロワミークを作成 } from '../ゲーム例/バトルスピリッ�
 import { カゼキリを作成 } from '../ゲーム例/バトルスピリッツスタン/カードデータ/カゼキリ.js';
 import { セルタリウスを作成 } from '../ゲーム例/バトルスピリッツスタン/カードデータ/セルタリウス.js';
 import { ウィンドブーストを作成 } from '../ゲーム例/バトルスピリッツスタン/カードデータ/ウィンドブースト.js';
+import { 紫血醒カード一覧 } from '../ゲーム例/バトルスピリッツスタン/カードデータ/紫血醒カード群.js';
 import { 練習用AI } from '../ゲーム例/バトルスピリッツスタン/AI/練習用AI.js';
 import { フラッシュタイミング管理 } from '../ゲーム例/バトルスピリッツスタン/管理/フラッシュタイミング管理.js';
 import { 効果の選択待ちを解消する } from '../ゲーム例/バトルスピリッツスタン/AI/対戦進行.js';
@@ -76,7 +77,7 @@ let セッション: セッション | null = null;
 
 const 相手識別子 = (識別子: string): string => (識別子 === 'p1' ? 'p2' : 'p1');
 
-type デッキタイプ = 'gungata' | 'genbo' | 'mushaako' | 'effect';
+type デッキタイプ = 'gungata' | 'genbo' | 'mushaako' | 'effect' | 'purple';
 
 function グンガタデッキを作成(接頭辞: string, 枚数 = 20): カード[] {
   const カード一覧: カード[] = [];
@@ -120,6 +121,17 @@ function 効果デッキを作成(接頭辞: string, 枚数 = 24): カード[] {
   return カード一覧;
 }
 
+// 紫／血醒のデッキ。コアを剥がす効果が主体で、赤のデッキとは当たり方が違う。
+// 効果を持つカードだけを詰めてあるので、自動対戦で必ず効果の道を通る。
+function 紫デッキを作成(接頭辞: string, 枚数 = 30): カード[] {
+  const カード一覧: カード[] = [];
+  for (let i = 0; i < 枚数; i++) {
+    const 定義 = 紫血醒カード一覧[i % 紫血醒カード一覧.length];
+    カード一覧.push(定義.作成(`${接頭辞}-purple-${i + 1}`));
+  }
+  return カード一覧;
+}
+
 function デッキを作成(接頭辞: string, タイプ: デッキタイプ): カード[] {
   if (タイプ === 'genbo') {
     return ゲン_ボーデッキを作成(接頭辞);
@@ -129,6 +141,9 @@ function デッキを作成(接頭辞: string, タイプ: デッキタイプ): �
   }
   if (タイプ === 'effect') {
     return 効果デッキを作成(接頭辞);
+  }
+  if (タイプ === 'purple') {
+    return 紫デッキを作成(接頭辞);
   }
   return グンガタデッキを作成(接頭辞);
 }
@@ -630,7 +645,7 @@ app.post('/api/game/start', (req: Request, res: Response) => {
     return;
   }
   let デッキタイプ: デッキタイプ = 'gungata';
-  if (deck === 'genbo' || deck === 'mushaako' || deck === 'effect') {
+  if (deck === 'genbo' || deck === 'mushaako' || deck === 'effect' || deck === 'purple') {
     デッキタイプ = deck;
   }
   セッション = 新しい試合を作る(mode, デッキタイプ);
