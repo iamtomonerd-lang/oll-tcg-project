@@ -356,7 +356,27 @@ function renderBoard(state) {
   // 効果が対象選択で止まっていれば、その案内と候補を出す
   const pending = state.保留中の効果;
   const effectPanel = el('effectPanel');
-  if (pending) {
+  if (pending && pending.選択肢) {
+    // カードを選ぶのではない判断（「置くコアは相手が選ぶ」など）。
+    // 相手の効果に答える場面なので、誰の効果なのかも見せる。
+    effectPanel.hidden = false;
+    el('effectTitle').textContent = `${pending.トリガー元カード名} の効果`;
+    el('effectHint').textContent = pending.問い || 'どちらかを選んでください';
+
+    const 選択肢一覧 = el('effectTargetList');
+    選択肢一覧.innerHTML = '';
+    for (const 選択肢 of pending.選択肢) {
+      const btn = document.createElement('button');
+      btn.className = 'effect-target-btn';
+      btn.textContent = 選択肢.表示;
+      btn.addEventListener('click', () => submitEffectSelection([選択肢.識別子]));
+      選択肢一覧.appendChild(btn);
+    }
+
+    // 選択肢はボタンを押した時点で決まるので、決定・見送りは出さない
+    el('effectConfirm').hidden = true;
+    el('effectSkip').hidden = true;
+  } else if (pending) {
     effectPanel.hidden = false;
 
     const 何体 = pending.最小 === pending.最大
