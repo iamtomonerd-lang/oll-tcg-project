@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "node --test \"dist/**/*.test.js\"",
+    "test": "npm run build && node --test \"dist/**/*.test.js\"",
     "lint": "eslint src",
     "clean": "rm -rf dist",
     "server": "npm run build && node dist/サーバー/ウェブサーバー.js"
