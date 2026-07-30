@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>バトルスピリッツ・スタン</title>
   <link rel="stylesheet" href="game.css">
+  <link rel="stylesheet" href="layout.css">
 </head>
 <body>
 
@@ -80,7 +81,7 @@
 
     <!-- 相手エリア -->
     <section class="side side-foe">
-      <div class="side-bar">
+      <div class="side-bar" data-layout-id="相手情報">
         <div class="identity">
           <span class="identity-name" id="foeName">相手</span>
           <span class="life" id="foeLife">Life 0</span>
@@ -91,20 +92,20 @@
           <button class="zone-count" id="foeTrash" type="button">トラッシュ 0</button>
         </div>
       </div>
-      <div class="hand hand-foe" id="foeHand"></div>
-      <div class="field" id="foeField"></div>
+      <div class="hand hand-foe" id="foeHand" data-layout-id="相手手札"></div>
+      <div class="field" id="foeField" data-layout-id="相手フィールド"></div>
     </section>
 
     <!-- ターン表示 -->
-    <div class="turn-banner" id="turnBanner">
+    <div class="turn-banner" id="turnBanner" data-layout-id="ターン表示">
       <span id="turnLabel">―</span>
       <button id="endStepBtn" class="btn-ghost" hidden>ステップを終了</button>
     </div>
 
     <!-- 自分エリア -->
     <section class="side side-self">
-      <div class="field" id="selfField"></div>
-      <div class="side-bar">
+      <div class="field" id="selfField" data-layout-id="自分フィールド"></div>
+      <div class="side-bar" data-layout-id="自分情報">
         <div class="identity">
           <span class="identity-name" id="selfName">自分</span>
           <span class="life" id="selfLife">Life 0</span>
@@ -115,7 +116,7 @@
           <button class="zone-count" id="selfTrash" type="button">トラッシュ 0</button>
         </div>
       </div>
-      <div class="hand" id="selfHand"></div>
+      <div class="hand" id="selfHand" data-layout-id="自分手札"></div>
     </section>
   </main>
 
@@ -194,5 +195,6 @@
   <div id="toast" class="toast" hidden></div>
 
   <script src="game.js"></script>
+  <script src="layout.js"></script>
 </body>
 </html>

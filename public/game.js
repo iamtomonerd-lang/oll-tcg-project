@@ -39,6 +39,9 @@ function showToast(message) {
   }, 2600);
 }
 
+// 配置モード（layout.js）からも知らせを出せるようにする
+window.showToast = showToast;
+
 async function api(method, url, body) {
   const res = await fetch(url, {
     method,

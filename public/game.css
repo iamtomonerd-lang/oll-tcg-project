@@ -31,6 +31,10 @@
   --radius-card: 10px;
   --radius-chrome: 4px;
 
+  /* カードの大きさ。配置モードのつまみで変えられる（縦横比 108:150 は保つ） */
+  --card-w: 108px;
+  --card-h: calc(var(--card-w) * 150 / 108);
+
   --font-body: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN",
     "Yu Gothic", "Segoe UI", system-ui, sans-serif;
 }
@@ -160,6 +164,8 @@ button {
   margin: 0 auto;
   max-width: 100%;
   width: 100%;
+  /* 配置モードでの座標の基準（画面いっぱい）を、通常表示のときと揃えておく */
+  min-height: 100vh;
 }
 
 .side {
@@ -319,8 +325,8 @@ button {
 
 .card {
   position: relative;
-  width: 108px;
-  height: 150px;
+  width: var(--card-w);
+  height: var(--card-h);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   flex-shrink: 0;

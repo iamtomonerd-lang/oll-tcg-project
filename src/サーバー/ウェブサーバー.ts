@@ -1,4 +1,5 @@
 import express, { Express, Request, Response } from 'express';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -642,6 +643,48 @@ function 支払うコストを求める(s: セッション, as: string, カー�
 }
 
 
+
+// === 盤面の配置（配置モードで決めたもの） ===
+//
+// 画面上で決めた配置をファイルに残し、次に開いたときの既定にする。
+// 中身は public/layout.js が読み書きする形（ブロックごとの位置と大きさ、％）。
+
+const 配置ファイル = path.join(__dirname, '../../public/レイアウト.json');
+
+app.get('/api/layout', (_req: Request, res: Response) => {
+  if (!fs.existsSync(配置ファイル)) {
+    res.json({ ok: true, レイアウト: null });
+    return;
+  }
+  try {
+    res.json({ ok: true, レイアウト: JSON.parse(fs.readFileSync(配置ファイル, 'utf8')) });
+  } catch {
+    res.json({ ok: true, レイアウト: null });
+  }
+});
+
+app.post('/api/layout', (req: Request, res: Response) => {
+  const レイアウト = req.body as { ブロック?: unknown } | undefined;
+  if (!レイアウト || typeof レイアウト !== 'object' || typeof レイアウト.ブロック !== 'object') {
+    エラー応答(res, '配置の形が正しくありません');
+    return;
+  }
+  try {
+    fs.writeFileSync(配置ファイル, `${JSON.stringify(レイアウト, null, 2)}\n`, 'utf8');
+    res.json({ ok: true });
+  } catch {
+    エラー応答(res, '配置を保存できませんでした');
+  }
+});
+
+app.delete('/api/layout', (_req: Request, res: Response) => {
+  try {
+    if (fs.existsSync(配置ファイル)) fs.unlinkSync(配置ファイル);
+    res.json({ ok: true });
+  } catch {
+    エラー応答(res, '配置を消せませんでした');
+  }
+});
 
 app.post('/api/game/start', (req: Request, res: Response) => {
   const { mode, deck } = req.body as { mode: モード; deck?: デッキタイプ };
