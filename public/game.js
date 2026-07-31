@@ -15,6 +15,7 @@ const CARD_ART = {
   '26RSD01-004': 'cards/26RSD01-004.png',
   '26RSD01-005': 'cards/26RSD01-005.png',
   '26RSD01-006': 'cards/26RSD01-006.png',
+  '26RSD01-007': 'cards/26RSD01-007.png',
 };
 
 const el = id => document.getElementById(id);
@@ -96,6 +97,7 @@ for (const btn of document.querySelectorAll('.deck-btn')) {
       'mushaako': 'ムーシャッコ',
       'harria': 'ハーリア',
       'cupel': 'キュペル',
+      'greifer': 'グライファー',
     };
     const deckName = deckNames[btn.dataset.deck] || 'デッキ';
     el('modeEyebrow').textContent = `${deckName}で対戦`;
