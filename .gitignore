@@ -7,3 +7,5 @@ dist/
 .env
 .env.local
 *.test.js
+# 配置データ（ユーザー生成）
+public/レイアウト.json*
