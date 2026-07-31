@@ -27,6 +27,7 @@ const CARD_ART: { [key: string]: string } = {
   '26RSD01-007': '/cards/26RSD01-007.png',
   '26RSD01-008': '/cards/26RSD01-008.png',
   '26RSD01-009': '/cards/26RSD01-009.png',
+  '26RSD01-010': '/cards/26RSD01-010.png',
 };
 
 const el = (id: string): HTMLElement | null => document.getElementById(id);
