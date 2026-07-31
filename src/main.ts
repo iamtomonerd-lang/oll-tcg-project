@@ -21,6 +21,7 @@ let selectedDeck = 'gungata';
 
 const CARD_ART: { [key: string]: string } = {
   '26RSD01-002': '/cards/26RSD01-002.png',
+  '26RSD01-004': '/cards/26RSD01-004.png',
   '26RSD01-005': '/cards/26RSD01-005.png',
 };
 
