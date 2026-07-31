@@ -167,7 +167,10 @@ async function 自動で対戦する(
   const 乱数 = 乱数を作る(種);
   let 視点 = 'p1';
 
-  let 状態 = (await 叩く('POST', '/api/game/start', { mode: モード, deck: デッキ })).state;
+  // 種はデッキのシャッフルにも渡す。ここを渡さないと、選ぶ手だけが再現されて
+  // 引きは毎回変わるため、同じ種でも試合が別物になってしまう。
+  let 状態 = (await 叩く('POST', '/api/game/start', { mode: モード, deck: デッキ, seed: 種 }))
+    .state;
   不変条件を検査する(状態, `開始 種=${種}`);
 
   let 選択待ち回数 = 0;
@@ -476,7 +479,9 @@ test('効果の判断は、聞かれている人以外は答えられない', as
 
   try {
     // 選択待ちが起きるまで進める（相手の判断でも自分の判断でもよい）
-    let 状態 = (await 叩く('POST', '/api/game/start', { mode: 'vsHuman', deck: 'purple' })).state;
+    let 状態 = (
+      await 叩く('POST', '/api/game/start', { mode: 'vsHuman', deck: 'purple', seed: 4649 })
+    ).state;
     let 視点 = 'p1';
     let 待ちに入った = false;
 

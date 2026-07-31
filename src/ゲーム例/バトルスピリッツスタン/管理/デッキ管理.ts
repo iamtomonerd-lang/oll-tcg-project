@@ -1,5 +1,6 @@
 import { ゲームエンジン } from '../../../ゲームエンジン.js';
 import { ゾーン管理 } from './ゾーン管理.js';
+import { 乱数, 既定の乱数 } from '../乱数.js';
 
 // デッキ管理（ゲームエンジン層）：デッキ／手札のカード操作
 // - デッキのシャッフル
@@ -7,9 +8,13 @@ import { ゾーン管理 } from './ゾーン管理.js';
 // - 手札をすべてデッキへ戻す
 export class デッキ管理 {
   private ゾーン管理: ゾーン管理;
+  // シャッフルに使う乱数。渡さなければ Math.random。
+  // 種を決めた乱数を渡すと、同じ種なら同じ並びになる（試合を再現できる）。
+  private 乱数: 乱数;
 
-  constructor() {
+  constructor(使う乱数: 乱数 = 既定の乱数) {
     this.ゾーン管理 = new ゾーン管理();
+    this.乱数 = 使う乱数;
   }
 
   // デッキをシャッフルする（フィッシャーイェーツ、その場で並べ替え）
@@ -20,7 +25,7 @@ export class デッキ管理 {
     }
     const 配列 = デッキ.カード群;
     for (let i = 配列.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(this.乱数() * (i + 1));
       [配列[i], 配列[j]] = [配列[j], 配列[i]];
     }
     return true;

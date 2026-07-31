@@ -15,6 +15,7 @@ import { 常在効果管理 } from './管理/常在効果管理.js';
 import { ターン履歴管理 } from './管理/ターン履歴管理.js';
 
 import { ゾーン管理 } from './管理/ゾーン管理.js';
+import { 乱数, 既定の乱数, 種から乱数を作る } from './乱数.js';
 import { 準備管理 } from './管理/準備管理.js';
 import { デッキ管理 } from './管理/デッキ管理.js';
 import { ターン管理 } from './管理/ターン管理.js';
@@ -95,7 +96,11 @@ export class 試合 {
 
   private 勝敗結果: 勝利結果 | null = null;
 
-  constructor() {
+  // 種を渡すと、デッキのシャッフルがその種で決まる（同じ種なら同じ試合になる）。
+  // 渡さなければ Math.random のままで、実際の対戦の引きは毎回変わる。
+  constructor(種?: number) {
+    const 使う乱数: 乱数 = 種 === undefined ? 既定の乱数 : 種から乱数を作る(種);
+
     this.ゲーム = new ゲームエンジン();
     this.効果エンジン = new 効果エンジン();
 
@@ -104,8 +109,8 @@ export class 試合 {
     this.制限効果管理 = new 制限効果管理();
 
     this.ゾーン管理 = new ゾーン管理();
-    this.準備管理 = new 準備管理();
-    this.デッキ管理 = new デッキ管理();
+    this.準備管理 = new 準備管理(使う乱数);
+    this.デッキ管理 = new デッキ管理(使う乱数);
     this.ターン管理 = new ターン管理();
     this.ターン判定 = new ターン判定();
     this.勝利判定 = new バトルスピリッツ勝利判定();

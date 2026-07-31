@@ -1,6 +1,7 @@
 import { ゲームエンジン } from '../../../ゲームエンジン.js';
 import { ゾーン管理 } from './ゾーン管理.js';
 import { コア管理 } from './コア管理.js';
+import { 乱数, 既定の乱数 } from '../乱数.js';
 import { デッキ管理 } from './デッキ管理.js';
 
 // 準備管理（ゲームエンジン層）：ゲーム開始前の準備を行う。
@@ -21,10 +22,11 @@ export class 準備管理 {
   readonly リザーブの初期通常コア数 = 3;
   readonly 初期手札枚数 = 4;
 
-  constructor() {
+  // シャッフルに使う乱数を持ち回す。渡さなければ Math.random。
+  constructor(使う乱数: 乱数 = 既定の乱数) {
     this.ゾーン管理 = new ゾーン管理();
     this.コア管理 = new コア管理();
-    this.デッキ管理 = new デッキ管理();
+    this.デッキ管理 = new デッキ管理(使う乱数);
   }
 
   // プレイヤーの初期コアを配置する

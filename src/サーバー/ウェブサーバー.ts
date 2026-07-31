@@ -251,8 +251,16 @@ function デッキを作成(接頭辞: string, タイプ: デッキタイプ): �
 }
 
 // 先攻はp1固定、引き直し（マリガン）は行わない、というのが現状の割り切り。
-function 新しい試合を作る(モード: モード, デッキタイプ: デッキタイプ = 'gungata'): セッション {
-  const 試合インスタンス = new 試合();
+//
+// 種を渡すと、デッキのシャッフルがその種で決まる。自動対戦テストが
+// 「同じ種なら同じ試合」を前提にできるようにするための入口で、
+// 実際の対戦では渡さない（毎回違う引きになる）。
+function 新しい試合を作る(
+  モード: モード,
+  デッキタイプ: デッキタイプ = 'gungata',
+  種?: number
+): セッション {
+  const 試合インスタンス = new 試合(種);
   試合インスタンス.プレイヤーを準備する('p1', 'プレイヤー1');
   試合インスタンス.プレイヤーを準備する('p2', 'プレイヤー2');
   試合インスタンス.ボイドを準備する();
@@ -821,7 +829,11 @@ app.delete('/api/layout', (_req: Request, res: Response) => {
 });
 
 app.post('/api/game/start', (req: Request, res: Response) => {
-  const { mode, deck } = req.body as { mode: モード; deck?: デッキタイプ };
+  const { mode, deck, seed } = req.body as {
+    mode: モード;
+    deck?: デッキタイプ;
+    seed?: number;
+  };
   if (mode !== 'vsAI' && mode !== 'vsHuman') {
     エラー応答(res, '不正なモードです');
     return;
@@ -841,7 +853,11 @@ app.post('/api/game/start', (req: Request, res: Response) => {
   ) {
     デッキタイプ = deck;
   }
-  セッション = 新しい試合を作る(mode, デッキタイプ);
+  セッション = 新しい試合を作る(
+    mode,
+    デッキタイプ,
+    typeof seed === 'number' && Number.isFinite(seed) ? seed : undefined
+  );
   人間の手番まで自動進行する(セッション);
   res.json({ ok: true, state: 状態を作る(セッション, 'p1') });
 });
