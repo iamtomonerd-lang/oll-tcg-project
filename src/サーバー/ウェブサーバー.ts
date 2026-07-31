@@ -648,19 +648,34 @@ function 支払うコストを求める(s: セッション, as: string, カー�
 //
 // 画面上で決めた配置をファイルに残し、次に開いたときの既定にする。
 // 中身は public/layout.js が読み書きする形（ブロックごとの位置と大きさ、％）。
+// 安全な書き込みのため、一時ファイルを使用してからリネーム
 
 const 配置ファイル = path.join(__dirname, '../../public/レイアウト.json');
+const 一時ファイル = path.join(__dirname, '../../public/レイアウト.json.tmp');
+const バックアップ = path.join(__dirname, '../../public/レイアウト.json.bak');
+
+function 配置を読み込む() {
+  if (fs.existsSync(配置ファイル)) {
+    try {
+      return JSON.parse(fs.readFileSync(配置ファイル, 'utf8'));
+    } catch {
+      // メインファイルが破損していればバックアップから復旧を試みる
+      if (fs.existsSync(バックアップ)) {
+        try {
+          return JSON.parse(fs.readFileSync(バックアップ, 'utf8'));
+        } catch {
+          return null;
+        }
+      }
+      return null;
+    }
+  }
+  return null;
+}
 
 app.get('/api/layout', (_req: Request, res: Response) => {
-  if (!fs.existsSync(配置ファイル)) {
-    res.json({ ok: true, レイアウト: null });
-    return;
-  }
-  try {
-    res.json({ ok: true, レイアウト: JSON.parse(fs.readFileSync(配置ファイル, 'utf8')) });
-  } catch {
-    res.json({ ok: true, レイアウト: null });
-  }
+  const レイアウト = 配置を読み込む();
+  res.json({ ok: true, レイアウト });
 });
 
 app.post('/api/layout', (req: Request, res: Response) => {
@@ -670,9 +685,25 @@ app.post('/api/layout', (req: Request, res: Response) => {
     return;
   }
   try {
-    fs.writeFileSync(配置ファイル, `${JSON.stringify(レイアウト, null, 2)}\n`, 'utf8');
+    // 1. 新しいデータを一時ファイルに書き込む
+    fs.writeFileSync(一時ファイル, `${JSON.stringify(レイアウト, null, 2)}\n`, 'utf8');
+
+    // 2. 現在のファイルが存在すればバックアップに移す
+    if (fs.existsSync(配置ファイル)) {
+      fs.renameSync(配置ファイル, バックアップ);
+    }
+
+    // 3. 一時ファイルを本ファイルに移す
+    fs.renameSync(一時ファイル, 配置ファイル);
+
     res.json({ ok: true });
-  } catch {
+  } catch (e) {
+    // エラー時は一時ファイルをクリーンアップ
+    try {
+      if (fs.existsSync(一時ファイル)) fs.unlinkSync(一時ファイル);
+    } catch {
+      /* 無視 */
+    }
     エラー応答(res, '配置を保存できませんでした');
   }
 });
@@ -680,6 +711,8 @@ app.post('/api/layout', (req: Request, res: Response) => {
 app.delete('/api/layout', (_req: Request, res: Response) => {
   try {
     if (fs.existsSync(配置ファイル)) fs.unlinkSync(配置ファイル);
+    if (fs.existsSync(バックアップ)) fs.unlinkSync(バックアップ);
+    if (fs.existsSync(一時ファイル)) fs.unlinkSync(一時ファイル);
     res.json({ ok: true });
   } catch {
     エラー応答(res, '配置を消せませんでした');
