@@ -378,7 +378,7 @@ test('APIを通した自動対戦', async t => {
   });
 
   await t.test('どのデッキでも成立する', async () => {
-    for (const デッキ of ['gungata', 'genbo', 'mushaako', 'harria', 'cupel', 'greifer', 'seltarius', 'effect', 'purple']) {
+    for (const デッキ of ['gungata', 'genbo', 'mushaako', 'harria', 'cupel', 'greifer', 'seltarius', 'leufalus', 'effect', 'purple']) {
       const 結果 = await 自動で対戦する('vsAI', デッキ, 2024);
       assert.equal(結果.決着した, true, `デッキ=${デッキ} で決着しなかった`);
     }
