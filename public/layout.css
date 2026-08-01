@@ -1,0 +1,465 @@
+/* 配置モード（ノーコードで盤面の配置と大きさを決める）
+   ・保存された配置があるときは .layout-applied が付き、各ブロックを絶対配置にする
+   ・編集中は .layout-editing が付き、盤面の上に操作用の板を重ねる */
+
+/* === 保存された配置を当てる === */
+
+.board.layout-applied {
+  display: block;
+  position: relative;
+  padding: 0;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* 相手側・自分側のまとまりは箱を消して、中のブロックが盤面に対して並ぶようにする */
+.board.layout-applied .side {
+  display: contents;
+}
+
+.board.layout-applied [data-layout-id] {
+  position: absolute;
+  margin: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+/* === 編集中の見た目 === */
+
+.board.layout-editing [data-layout-id] {
+  outline: 1px dashed rgba(63, 216, 196, 0.35);
+  outline-offset: -1px;
+}
+
+#layoutOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+}
+
+.layout-proxy {
+  position: absolute;
+  border: 1px solid rgba(63, 216, 196, 0.55);
+  background: rgba(63, 216, 196, 0.06);
+  border-radius: 4px;
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+}
+
+.layout-proxy:hover {
+  background: rgba(63, 216, 196, 0.12);
+}
+
+/* ブロックが重なると下の板のつまみが掴めなくなるので、選んだものを前面に出す。
+   一覧から選び直せば、どのブロックでも必ず操作できる。 */
+.layout-proxy.selected {
+  z-index: 10;
+  border-color: var(--core-strong);
+  background: rgba(63, 216, 196, 0.16);
+  box-shadow: 0 0 0 1px var(--core-strong);
+}
+
+.layout-proxy-name {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--core-strong);
+  background: rgba(6, 7, 11, 0.75);
+  padding: 1px 6px;
+  border-radius: 3px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ブロックが盤面の端にあってもつまみが画面の外へ出ないよう、内側に置く */
+.layout-handle {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--core-strong);
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+/* === 操作パネル === */
+
+#layoutPanel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1200;
+  width: 260px;
+  padding: 14px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.layout-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -14px -14px 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  border-radius: 10px 10px 0 0;
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+}
+
+#layoutPanel h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--core);
+}
+
+.layout-fold {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+#layoutPanel.folded .layout-panel-body {
+  display: none;
+}
+
+#layoutPanel.folded .layout-panel-head {
+  margin-bottom: -14px;
+  border-bottom: none;
+  border-radius: 10px;
+}
+
+.layout-block-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 12px;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.layout-block-btn {
+  padding: 6px 9px;
+  background: var(--ink-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-chrome);
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: left;
+}
+
+.layout-block-btn.selected {
+  border-color: var(--core);
+  color: var(--text);
+  background: var(--core-soft);
+}
+
+.layout-nums {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.layout-num {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.layout-num label {
+  color: var(--text-faint);
+  width: 30px;
+  flex-shrink: 0;
+}
+
+.layout-num input {
+  width: 100%;
+  min-width: 0;
+  padding: 5px 6px;
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-chrome);
+  color: var(--text);
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+.layout-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--text-dim);
+}
+
+.layout-row input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--core);
+}
+
+.layout-row .layout-readout {
+  width: 46px;
+  text-align: right;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.layout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.layout-actions button {
+  flex: 1 1 calc(50% - 3px);
+  padding: 8px;
+  border-radius: var(--radius-chrome);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+.layout-hint {
+  margin: 10px 0 0;
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* === 入口のボタン === */
+
+/* 盤面の右上は情報バーのボタンと重なるので、空きやすい右下に置く */
+#layoutEditBtn {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 1100;
+  padding: 7px 12px;
+  background: rgba(23, 27, 38, 0.85);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-chrome);
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.55;
+  transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+}
+
+#layoutEditBtn:hover {
+  opacity: 1;
+  border-color: var(--core);
+  color: var(--core);
+}
+
+/* === セーブデータのパネル === */
+
+/* 入口のボタン。配置ボタンの左隣に並べる。 */
+#saveDataBtn {
+  position: fixed;
+  right: 92px;
+  bottom: 14px;
+  z-index: 1100;
+  padding: 7px 12px;
+  background: rgba(23, 27, 38, 0.85);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-chrome);
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.55;
+  transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+}
+
+#saveDataBtn:hover {
+  opacity: 1;
+  border-color: var(--core);
+  color: var(--core);
+}
+
+/* 画面の中央に出す。配置パネルと違って、盤面を見ながら操作するものではないため。 */
+#savePanel {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1300;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.85);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.save-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+#savePanel h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--core);
+}
+
+.save-x {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 15px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.save-x:hover {
+  color: var(--text);
+}
+
+.save-body {
+  padding: 14px 16px 16px;
+}
+
+.save-lead {
+  margin: 0 0 12px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.save-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.save-tab {
+  flex: 1;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.save-tab.selected {
+  border-color: var(--core);
+  color: var(--core);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.save-contents {
+  margin-bottom: 10px;
+}
+
+.save-listtitle {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+}
+
+.save-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.save-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.save-list li span {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.save-empty {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--text-faint);
+  line-height: 1.7;
+  text-align: center;
+}
+
+/* セーブ文字列そのもの。折り返して全体が見えるようにする。 */
+.save-text {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  background: var(--ink-1, rgba(0, 0, 0, 0.35));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  resize: vertical;
+  word-break: break-all;
+  /* iPadで勝手に拡大されないようにする */
+  -webkit-text-size-adjust: 100%;
+}
+
+.save-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.save-actions button {
+  flex: 1;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.save-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

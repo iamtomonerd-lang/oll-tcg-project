@@ -6,11 +6,14 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "typecheck:browser": "tsc -p tsconfig.ブラウザ.json",
+    "build:browser": "npm run typecheck:browser && esbuild src/ブラウザ/起動.ts --bundle --format=iife --target=es2020 --minify --outfile=public/ゲーム本体.js",
+    "build:all": "npm run build && npm run build:browser",
     "dev": "tsc --watch",
-    "test": "node --test dist/**/*.test.js",
+    "test": "npm run build && node --test \"dist/**/*.test.js\"",
     "lint": "eslint src",
-    "clean": "rm -rf dist",
-    "server": "npm run build && node dist/サーバー/ウェブサーバー.js"
+    "clean": "rm -rf dist public/ゲーム本体.js",
+    "server": "npm run build:all && node dist/サーバー/ウェブサーバー.js"
   },
   "keywords": [
     "tcg",
@@ -26,6 +29,7 @@
   "devDependencies": {
     "@types/express": "^4.17.0",
     "@types/node": "^20.0.0",
+    "esbuild": "^0.28.1",
     "typescript": "^5.0.0"
   }
 }

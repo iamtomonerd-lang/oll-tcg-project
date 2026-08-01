@@ -1,0 +1,44 @@
+import { 効果, 効果実行文脈, 効果結果 } from './効果.js';
+
+export type 起動条件 = (文脈: 効果実行文脈) => boolean;
+export type 起動処理 = (文脈: 効果実行文脈) => Promise<効果結果>;
+
+// 起動効果：プレイヤーが任意のタイミングで宣言して発揮する効果（コストを支払って起動する等）。
+export class 起動効果 extends 効果 {
+  private 条件: 起動条件;
+  private 処理: 起動処理;
+  private 有効: boolean;
+
+  constructor(識別子: string, 名前: string, 条件: 起動条件, 処理: 起動処理) {
+    super(識別子, 名前);
+    this.条件 = 条件;
+    this.処理 = 処理;
+    this.有効 = true;
+  }
+
+  起動可能(文脈: 効果実行文脈): boolean {
+    if (!this.有効) {
+      return false;
+    }
+    return this.条件(文脈);
+  }
+
+  async 実行(文脈: 効果実行文脈): Promise<効果結果> {
+    if (!this.起動可能(文脈)) {
+      return { 成功: false, メッセージ: '起動条件が満たされていません' };
+    }
+    return this.処理(文脈);
+  }
+
+  有効化(): void {
+    this.有効 = true;
+  }
+
+  無効化(): void {
+    this.有効 = false;
+  }
+
+  有効判定(): boolean {
+    return this.有効;
+  }
+}

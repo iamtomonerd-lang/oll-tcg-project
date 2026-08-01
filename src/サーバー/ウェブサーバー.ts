@@ -1,74 +1,102 @@
+// ウェブサーバー（HTTPの皮）
+//
+// ゲームの決まりごとは一切ここに置かない。すべて アプリ/ゲームAPI.ts にある。
+// このファイルの仕事は2つだけ。
+//   1. public/ の中身を配る
+//   2. /api/... のリクエストを ゲームAPI.処理する() に渡して、返ってきたものをそのまま返す
+//
+// 同じ ゲームAPI を、ブラウザ側は src/ブラウザ/起動.ts から直に呼ぶ。
+// どちらの入り口から来ても通る道が同じなので、片方だけ挙動がずれることがない。
+
 import express, { Express, Request, Response } from 'express';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { シンプルTCG } from '../ゲーム例/シンプルTCG.js';
+
+import { 処理する, 配置保管庫, 配置保管庫を設定する } from '../アプリ/ゲームAPI.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app: Express = express();
-const ポート = 3000;
-
-let ゲーム: シンプルTCG | null = null;
+const ポート = Number(process.env.PORT ?? 3000);
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../../public')));
 
-app.get('/api/ゲーム/状態', (req: Request, res: Response) => {
-  if (!ゲーム) {
-    res.json({ 初期化済み: false });
-    return;
-  }
+// === 配置をファイルに残す ===
+//
+// 更新してもユーザーの調整が消えないよう、ゲーム本体とは別のファイルに置く。
+// 書き込みは 一時ファイル → 本ファイルをバックアップへ → 一時ファイルを本ファイルへ、
+// の順に行う。途中で落ちても、本ファイルが壊れた状態にはならない。
 
-  const A手札 = ゲーム.A手札を取得().カード一覧を取得();
-  const A場 = ゲーム.A場を取得().カード一覧を取得();
-  const B手札 = ゲーム.B手札を取得().カード一覧を取得();
-  const B場 = ゲーム.B場を取得().カード一覧を取得();
+const 配置ファイル = path.join(__dirname, '../../public/レイアウト.json');
+const 一時ファイル = path.join(__dirname, '../../public/レイアウト.json.tmp');
+const バックアップ = path.join(__dirname, '../../public/レイアウト.json.bak');
 
-  res.json({
-    初期化済み: true,
-    プレイヤーA: {
-      名前: ゲーム.プレイヤーAを取得().名前,
-      ライフ: ゲーム.プレイヤーAを取得().ライフを取得(),
-      手札枚数: A手札.length,
-      場のカード: A場.map(c => ({
-        識別子: c.識別子,
-        名前: c.名称.表示名,
-        HP: c.数値を取得('HP'),
-        攻撃力: c.数値を取得('攻撃力'),
-      })),
-    },
-    プレイヤーB: {
-      名前: ゲーム.プレイヤーBを取得().名前,
-      ライフ: ゲーム.プレイヤーBを取得().ライフを取得(),
-      手札枚数: B手札.length,
-      場のカード: B場.map(c => ({
-        識別子: c.識別子,
-        名前: c.名称.表示名,
-        HP: c.数値を取得('HP'),
-        攻撃力: c.数値を取得('攻撃力'),
-      })),
-    },
+const ファイル配置保管庫: 配置保管庫 = {
+  読み込む() {
+    if (!fs.existsSync(配置ファイル)) return null;
+    try {
+      return JSON.parse(fs.readFileSync(配置ファイル, 'utf8'));
+    } catch {
+      // 本ファイルが壊れていればバックアップから復旧を試みる
+      if (fs.existsSync(バックアップ)) {
+        try {
+          return JSON.parse(fs.readFileSync(バックアップ, 'utf8'));
+        } catch {
+          return null;
+        }
+      }
+      return null;
+    }
+  },
+
+  保存する(配置: unknown) {
+    try {
+      fs.writeFileSync(一時ファイル, `${JSON.stringify(配置, null, 2)}\n`, 'utf8');
+      if (fs.existsSync(配置ファイル)) fs.renameSync(配置ファイル, バックアップ);
+      fs.renameSync(一時ファイル, 配置ファイル);
+    } catch (e) {
+      // 中途半端な一時ファイルを残さない
+      try {
+        if (fs.existsSync(一時ファイル)) fs.unlinkSync(一時ファイル);
+      } catch {
+        /* 無視 */
+      }
+      throw e;
+    }
+  },
+
+  消す() {
+    if (fs.existsSync(配置ファイル)) fs.unlinkSync(配置ファイル);
+    if (fs.existsSync(バックアップ)) fs.unlinkSync(バックアップ);
+    if (fs.existsSync(一時ファイル)) fs.unlinkSync(一時ファイル);
+  },
+};
+
+配置保管庫を設定する(ファイル配置保管庫);
+
+// === APIをそのまま通す ===
+
+function 中継する(req: Request, res: Response): void {
+  const 応答 = 処理する(req.method, req.originalUrl, req.body);
+  res.status(応答.状態番号).json(応答.本体);
+}
+
+app.get('/api/*', 中継する);
+app.post('/api/*', 中継する);
+app.delete('/api/*', 中継する);
+
+// テストから読み込んで叩けるよう、アプリ本体は公開し、
+// 待ち受けはこのファイルを直接実行したときだけ行う。
+export { app };
+
+const 直接実行されたか = process.argv[1] === fileURLToPath(import.meta.url);
+if (直接実行されたか) {
+  app.listen(ポート, () => {
+    console.log(`\n🎮 バトルスピリッツ・スタン サーバーが起動しました！`);
+    console.log(`   http://localhost:${ポート}`);
+    console.log(`   同じネットワーク内の別端末からは http://<このマシンのIP>:${ポート}\n`);
   });
-});
-
-app.post('/api/ゲーム/初期化', (req: Request, res: Response) => {
-  try {
-    ゲーム = new シンプルTCG();
-    ゲーム.ゲームを初期化();
-    res.json({ 成功: true, メッセージ: 'ゲーム初期化完了' });
-  } catch (error) {
-    res.status(500).json({
-      成功: false,
-      メッセージ: error instanceof Error ? error.message : '初期化失敗',
-    });
-  }
-});
-
-app.listen(ポート, () => {
-  console.log(`\n🎮 TCG サーバーが起動しました！`);
-  console.log(`📱 iPad で以下にアクセス:`);
-  console.log(`   http://localhost:${ポート}`);
-  console.log(`   または http://<このマシンのIP>:${ポート}`);
-  console.log(`\n⚠️  同じネットワークで iPad と接続してください\n`);
-});
+}

@@ -1,0 +1,78 @@
+# ゲームを GitHub Pages に置く。
+#
+# ゲームはブラウザの中だけで動くので、置くのは public/ の中身だけでよい。
+# サーバーは要らない。アカウントも課金も要らない。
+#
+# 置き場所は https://<ユーザー名>.github.io/<リポジトリ名>/ になる。
+# 根ではないので、public/ の中のパスはすべて相対で書いてある。
+#
+# 【最初の1回だけ必要な設定】
+#   GitHubのリポジトリ → Settings → Pages → Build and deployment
+#   Source を「GitHub Actions」に変える。
+#   これを変えるまで、このワークフローは最後の一歩で失敗する。
+
+name: 公開
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Pagesへ書き込むために要る権限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 公開は1つずつ。走っている途中のものは止めない（中途半端な状態で終わらせないため）。
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  組み立て:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: 依存を入れる
+        run: npm ci
+
+      - name: 壊れていないか確かめてから公開する
+        run: |
+          npm run build
+          node --test "dist/**/*.test.js"
+
+      - name: ブラウザ用にまとめる
+        run: npm run build:browser
+
+      - name: 置くものを整える
+        run: |
+          rm -rf 公開物
+          cp -r public 公開物
+          # ユーザーが手元で作った配置データは公開しない
+          rm -f 公開物/レイアウト.json 公開物/レイアウト.json.bak 公開物/レイアウト.json.tmp
+          # GitHub Pages が _ 始まりのファイルを消さないようにする
+          touch 公開物/.nojekyll
+          ls -la 公開物
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: 公開物
+
+  公開:
+    needs: 組み立て
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.公開手順.outputs.page_url }}
+    steps:
+      - id: 公開手順
+        uses: actions/deploy-pages@v4

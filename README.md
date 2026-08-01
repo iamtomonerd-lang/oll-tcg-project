@@ -1,213 +1,143 @@
-# OLL TCG Project
+# バトルスピリッツ・スタン
 
-全てのトレーディングカードゲーム(TCG)を作れる土台
+ブラウザだけで動くバトルスピリッツ。収録は `26RSD01 バトスピエントリーデッキ 赫焔ノ風牙`（全16枚）。
 
-## プロジェクト構成
+サーバーは要らない。ページを開けばその中だけでゲームが動く。
+
+---
+
+## iPadで遊ぶ
+
+`main` に変更が入ると自動で公開される。iPadのSafariで開くだけ。
 
 ```
-src/
-├── data/                    # データ定義
-│   ├── card/               # カード定義
-│   │   └── CardName.ts     # カード: 名称、状態、数値
-│   ├── zone/               # ゾーン定義
-│   │   └── ZoneName.ts     # ゾーン: 名称、状態、置ける物、効果対象
-│   ├── player/             # プレイヤー定義
-│   │   └── PlayerState.ts  # プレイヤー: 状態、数値
-│   └── game/               # ゲーム物定義
-│       └── GameObject.ts   # ゲーム物: 状態、数値
-├── effects/                # 効果処理
-│   ├── Effect.ts           # 効果基底クラス
-│   ├── ReplacementEffect.ts    # 置換効果
-│   ├── ZoneMoveEffect.ts       # ゾーン移動
-│   ├── ValueChangeEffect.ts    # 数値の変化
-│   ├── StateChangeEffect.ts    # 状態変更
-│   ├── SpawnEffect.ts          # 物の生成
-│   ├── RandomEffect.ts         # 乱数の生成
-│   └── EffectEngine.ts         # 効果エンジン
-├── GameEngine.ts           # ゲームコア
-└── index.ts               # メインエクスポート
+https://<ユーザー名>.github.io/oll-tcg-project/
 ```
 
-## 主要なコンポーネント
+**ホーム画面に置くと、アプリのように全画面で使えて、通信が無くても遊べる。**
 
-### データレイヤー
+1. Safariで上のURLを開く
+2. 共有ボタン（□に↑）→「ホーム画面に追加」
+3. 追加されたアイコンから開く
 
-#### Card (カード)
-- `id`: カードの一意識別子
-- `name`: カード情報 (表示名、説明)
-- `state`: カード状態 (任意のキー値ペア)
-- `values`: カード数値 (キー値ペア、数値型)
+### 初回だけ必要な設定
 
-#### Zone (ゾーン)
-- `id`: ゾーンの一意識別子
-- `name`: ゾーン情報
-- `state`: ゾーン状態
-- `cards`: 配置されたカード
-- `constraint`: 制約 (最大枚数、許可カード種別)
-- `effectTargets`: 効果対象のID集合
+GitHubの `Settings` → `Pages` → `Build and deployment` の `Source` を
+**「GitHub Actions」** に変える。これを変えるまで公開は最後の一歩で失敗する。
 
-#### Player (プレイヤー)
-- `id`: プレイヤーID
-- `name`: プレイヤー名
-- `state`: プレイヤー状態
-- `values`: プレイヤー数値 (ライフ等)
+---
 
-#### GameObject (ゲーム物)
-- `id`: ゲーム物ID
-- `type`: ゲーム物種別
-- `state`: ゲーム物状態
-- `values`: ゲーム物数値
+## iPadで開発する
 
-### 効果レイヤー
+コードを書く・テストを流す・公開する、すべてブラウザの中で完結する。手元にPCは要らない。
 
-#### 置換効果 (ReplacementEffect)
-他の効果が発生する際に、それを別の効果に置き換える
+| やりたいこと | どうするか |
+|---|---|
+| コードを変える | Claude Code（claude.ai/code）に頼む |
+| 壊れていないか見る | push すると GitHub Actions がテストを流す。結果はプルリクエストの画面に出る |
+| 動きを確かめる | `main` に入れば数分で公開URLに反映される |
+| 見た目を直す | ゲーム画面右下の「配置」ボタンから、指でドラッグして調整できる |
 
-```typescript
-const replacement = new ReplacementEffect(
-  'prevent-damage',
-  'Prevent Damage',
-  (context) => context.target instanceof Player && context.effectId === 'damage',
-  async (context) => {
-    // 置き換え処理
-    return { success: true };
-  }
-);
-```
+配置の調整結果はブラウザに残る（`localStorage`）。ゲームを更新しても消えない。
 
-#### ゾーン移動 (ZoneMoveEffect)
-カードをあるゾーンから別のゾーンに移動
+### セーブデータを持ち運ぶ
 
-```typescript
-await engine.executeEffect('zone-move', {
-  source: card,
-  target: targetZone,
-  additionalData: { fromZone: sourceZone }
-});
-```
+ブラウザに残したものは、Safariのデータを消すと失われる。
+画面右下の **「💾 データ」** から、1本の文字列に書き出せる。
 
-#### 数値変化 (ValueChangeEffect)
-カード、プレイヤー、ゲーム物の数値を変更
+- **書き出す** … メモ帳などに貼っておけば、あとで元に戻せる
+- **読み込む** … 貼り付けて押すだけ。別の端末にも移せる
 
-```typescript
-await engine.executeEffect('value-change', {
-  target: player,
-  additionalData: { key: 'life', amount: -5 }
-});
-```
+改行が混ざっても読める。途中までしかコピーできていない場合はその旨を伝えて弾く。
 
-#### 状態変更 (StateChangeEffect)
-カード、プレイヤー、ゲーム物、ゾーンの状態を変更
+いまは「画面の配置」が対象。デッキ構築・リプレイ・実績を足したときも、
+同じ文字列にまとまるようにしてある。
 
-```typescript
-await engine.executeEffect('state-change', {
-  target: card,
-  additionalData: { key: 'tapped', value: true }
-});
-```
+---
 
-#### 物の生成 (SpawnEffect)
-新しいカードまたはゲーム物を生成
-
-```typescript
-await engine.executeEffect('spawn', {
-  additionalData: {
-    type: 'card',
-    cardId: 'new-card-1',
-    cardName: { id: 'card-1', displayName: 'New Card' }
-  }
-});
-```
-
-#### 乱数生成 (RandomEffect)
-指定範囲の乱数を生成
-
-```typescript
-const result = await engine.executeEffect('random', {
-  additionalData: { min: 1, max: 6, count: 1 }
-});
-console.log(result.data.value); // 1-6のいずれか
-```
-
-### ゲームエンジン (GameEngine)
-
-ゲーム全体を管理するコアエンジン
-
-```typescript
-const game = new GameEngine();
-
-// プレイヤー追加
-const player1 = new Player('p1', 'Player 1');
-game.addPlayer(player1);
-
-// ゾーン追加
-const hand = new Zone('hand', { id: 'hand', displayName: 'Hand' });
-game.addZone(hand);
-
-// 効果エンジンへのアクセス
-const effectEngine = game.getEffectEngine();
-
-// 効果実行
-await game.executeEffect('zone-move', context);
-
-// ゲーム状態取得
-const state = game.getGameState();
-```
-
-## 使用例
-
-```typescript
-import {
-  Card,
-  Zone,
-  Player,
-  GameEngine,
-  ZoneMoveEffect,
-  EffectEngine
-} from './src/index.js';
-
-// ゲーム初期化
-const game = new GameEngine();
-const effectEngine = game.getEffectEngine();
-
-// プレイヤー作成
-const player = new Player('p1', 'Alice');
-player.setValue('life', 20);
-game.addPlayer(player);
-
-// ゾーン作成
-const hand = new Zone('hand', { id: 'hand', displayName: 'Hand' });
-const field = new Zone('field', { id: 'field', displayName: 'Field' });
-game.addZone(hand);
-game.addZone(field);
-
-// カード作成
-const card = new Card('card-1', { id: 'card-1', displayName: 'Sample Card' });
-card.setValue('power', 5);
-hand.addCard(card);
-
-// 効果エンジン登録
-const zoneMoveEffect = new ZoneMoveEffect();
-effectEngine.registerEffect(zoneMoveEffect);
-
-// 効果実行
-const result = await game.executeEffect('zone-move', {
-  source: card,
-  target: field,
-  additionalData: { fromZone: hand }
-});
-
-console.log(result.message); // "Moved card card-1 to zone field"
-```
-
-## セットアップ
+## 手元で動かす（PCがある場合）
 
 ```bash
 npm install
-npm run build
-npm test
+npm run server     # http://localhost:3000
 ```
+
+```bash
+npm test           # 全テスト
+npm run build:all  # TypeScript と ブラウザ用のまとめ
+```
+
+---
+
+## 作りの全体像
+
+```
+public/           … 画面。ここが丸ごと公開される
+  index.html
+  game.js         … 盤面の描画と操作
+  layout.js       … 配置モード
+  ゲーム本体.js    … ビルドで作られる（gitには入れない）
+  cards/          … カード画像
+
+src/
+  ブラウザ/起動.ts        … ブラウザ用の入口。fetch を包んで /api/ を画面内で受ける
+  サーバー/ウェブサーバー.ts … 手元で動かすとき用の入口（HTTPで包むだけ）
+  アプリ/ゲームAPI.ts     … ★ゲームのAPI本体。土台に依存しない
+  ゲーム例/バトルスピリッツスタン/
+    カードデータ/    … カード1枚ずつ
+    効果部品/        … 効果を組み立てる部品（6分類）
+    効果語彙/        … カードテキストを書き下した効果定義（答え合わせ用）
+    管理/ 判定/      … ルールの実装
+  効果解釈/          … 効果インタプリタ
+```
+
+ゲームの決まりごとは `src/アプリ/ゲームAPI.ts` にしかない。
+ブラウザから来てもHTTPから来ても同じ道を通るので、片方だけ挙動がずれることがない。
+
+---
+
+## カードの効果の書き方
+
+カード1枚ごとにクラスを作らず、**部品の組み合わせ**で書く。
+
+```typescript
+// ［Lv1-2］『召喚時』BP7000以下の相手のスピリット1体を指定する。それを破壊する。
+{
+  Lv: [1, 2],
+  ...召喚時,
+  処理: [相手のスピリットを選ぶ({ BP以下: 7000 }), それを破壊する],
+}
+```
+
+部品の一覧と使用実績は **[`docs/効果パーツ一覧.md`](docs/効果パーツ一覧.md)**。
+
+新しいカードを足すときの手順は **[`CLAUDE.md`](CLAUDE.md)** に書いてある。
+
+---
+
+## 実装済みのカード
+
+| 番号 | 名前 | 種別 |
+|---|---|---|
+| 26RSD01-001〜003 | グン＝ガタ／ゲン＝ボー／ムーシャッコ ほか | スピリット |
+| 26RSD01-004 | ハーリア | スピリット |
+| 26RSD01-006 | キュペル | スピリット |
+| 26RSD01-007 | グライファー | スピリット |
+| 26RSD01-008 | セルタリウス | スピリット《継召》 |
+| 26RSD01-009 | 飛傑レウファルス | スピリット《真界放》 |
+| 26RSD01-010 | 最奥：風牙岩 | ネクサス |
+| 26RSD01-011 | 浮遊岩域 | ネクサス |
+| 26RSD01-012 | ブレイククロー | マジック |
+| 26RSD01-013 | オフェリングドロー | マジック《継召》 |
+| 26RSD01-014 | フレイムハリケーン | マジック《ソウルマジック》 |
+| 26RSD01-X01 | 飛赫レンシス | スピリット《継召》 |
+| 26RSD01-X02 | 飛剛アクライ | スピリット《継召》《真界放》 |
+
+---
 
 ## ライセンス
 
 MIT
+
+カード画像および『バトルスピリッツ』の名称・テキストの権利は BANDAI / BNP に帰属する。
+これは個人が遊ぶための実装であり、公式のものではない。

@@ -1,0 +1,20 @@
+// ブラウザ側（src/ブラウザ/）の型検査だけを行う設定。
+//
+// 本体の tsconfig.json は lib を ES2020 だけにしてある。
+// エンジンやサーバーが window や document をうっかり触るのを防ぐためで、
+// この縛りは外したくない。
+//
+// 一方でブラウザの入り口は fetch・localStorage・Response を使うので、
+// そこだけ DOM を足した設定を別に用意する。
+// まとめるのは esbuild（型を見ない）なので、型の確認はここが担当する。
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2020", "DOM"],
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false
+  },
+  "include": ["src/ブラウザ/**/*", "src/アプリ/**/*"]
+}

@@ -2,74 +2,272 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>シンプルTCG - Web版</title>
+  <!-- iPadで指がずれても拡大しないように。盤面はドラッグ操作が主なため。 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>バトルスピリッツ・スタン</title>
+  <meta name="theme-color" content="#0a0c12">
+
+  <!-- ホーム画面に追加したときの見た目（iPadはmanifestだけでは足りないので個別に指定） -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="バトスピ">
+
   <link rel="stylesheet" href="game.css">
+  <link rel="stylesheet" href="layout.css">
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1>🎮 シンプルTCG</h1>
-      <div class="status-bar">
-        <button id="initBtn" class="btn btn-primary">ゲーム開始</button>
-        <button id="resetBtn" class="btn btn-secondary" style="display: none;">リセット</button>
-      </div>
-    </header>
 
-    <main class="game-board">
-      <!-- プレイヤーB（敵） -->
-      <div class="player-section player-b">
-        <div class="player-header">
-          <h2 id="playerB-name">Bob</h2>
-          <div class="life-bar">
-            <div id="playerB-life" class="life-fill"></div>
-            <span id="playerB-life-text" class="life-text">20 / 20</span>
-          </div>
+  <!-- デッキ選択 -->
+  <section id="deckScreen" class="overlay-screen">
+    <div class="mode-card">
+      <p class="eyebrow">デッキを選んでください</p>
+      <h1>バトルスピリッツ・スタン</h1>
+      <p class="mode-lead">使用するデッキを選んでください。</p>
+      <div class="mode-choices">
+        <button class="mode-btn deck-btn" data-deck="gungata">
+          <span class="mode-btn-title">グン＝ガタ</span>
+          <span class="mode-btn-desc">赤色のスピリット（BP5000→8000）</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="genbo">
+          <span class="mode-btn-title">ゲン＝ボー</span>
+          <span class="mode-btn-desc">赤色のスピリット（BP3000→5000）</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="mushaako">
+          <span class="mode-btn-title">ムーシャッコ</span>
+          <span class="mode-btn-desc">赤色のスピリット（BP2000→3000）、ドロー効果</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="harria">
+          <span class="mode-btn-title">ハーリア</span>
+          <span class="mode-btn-desc">赤色のスピリット（BP4000→6000）、アタック時にデッキをめくる効果</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="cupel">
+          <span class="mode-btn-title">キュペル</span>
+          <span class="mode-btn-desc">赤色のスピリット（BP4000→7000）、トラッシュからコアを置く効果</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="greifer">
+          <span class="mode-btn-title">グライファー</span>
+          <span class="mode-btn-desc">赤色のスピリット（BP5000→7000）、起動効果と《真界放》の破壊</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="seltarius">
+          <span class="mode-btn-title">セルタリウス</span>
+          <span class="mode-btn-desc">赤色のスピリット（BP6000→7000）、《継召》とトラッシュ回収</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="leufalus">
+          <span class="mode-btn-title">飛傑レウファルス</span>
+          <span class="mode-btn-desc">赤色のスピリット（BP6000→8000）、召喚時の破壊と《真界放》</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="fuugagan">
+          <span class="mode-btn-title">最奥：風牙岩</span>
+          <span class="mode-btn-desc">赤色のネクサス、アタックステップの起動効果と《真界放》</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="ganiki">
+          <span class="mode-btn-title">浮遊岩域</span>
+          <span class="mode-btn-desc">赤色のネクサス、《継召》持ちをアタックステップにBP+2000</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="breakclaw">
+          <span class="mode-btn-title">ブレイククロー</span>
+          <span class="mode-btn-desc">赤色のマジック、メインでネクサス破壊／フラッシュでBP+3000</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="offering">
+          <span class="mode-btn-title">オフェリングドロー</span>
+          <span class="mode-btn-desc">赤色のマジック、デッキの上3枚から風牙2枚を手札に</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="flame">
+          <span class="mode-btn-title">フレイムハリケーン</span>
+          <span class="mode-btn-desc">赤色のマジック、《ソウルマジック》とBP7000以下の破壊</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="rensis">
+          <span class="mode-btn-title">飛赫レンシス</span>
+          <span class="mode-btn-desc">赤色のスピリット（BP6000→8000）、《継召》と召喚時の破壊</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="akurai">
+          <span class="mode-btn-title">飛剛アクライ</span>
+          <span class="mode-btn-desc">赤色のスピリット（BP7000→10000）、《継召》と《真界放》のめくり</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- モード選択 -->
+  <section id="modeScreen" class="overlay-screen" hidden>
+    <div class="mode-card">
+      <p class="eyebrow" id="modeEyebrow">―</p>
+      <h1>対戦相手を選んでください</h1>
+      <p class="mode-lead"></p>
+      <div class="mode-choices">
+        <button class="mode-btn" data-mode="vsAI">
+          <span class="mode-btn-title">練習用AIと対戦</span>
+          <span class="mode-btn-desc">1画面で完結。相手は自動で行動します。</span>
+        </button>
+        <button class="mode-btn" data-mode="vsHuman">
+          <span class="mode-btn-title">2人で対戦（同じ画面）</span>
+          <span class="mode-btn-desc">手番が変わるたびに画面を渡し合います。</span>
+        </button>
+      </div>
+      <button id="deckBack" class="btn-outline" style="margin-top: 16px;">← デッキを変更</button>
+    </div>
+  </section>
+
+  <!-- 手番の受け渡し -->
+  <section id="handoffScreen" class="overlay-screen" hidden>
+    <div class="mode-card">
+      <p class="eyebrow">画面を渡してください</p>
+      <h1 id="handoffName">―</h1>
+      <p class="mode-lead" id="handoffReason">の番です</p>
+      <button id="handoffReady" class="mode-btn mode-btn-solo">
+        <span class="mode-btn-title">準備できました</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- 決着 -->
+  <section id="resultScreen" class="overlay-screen" hidden>
+    <div class="mode-card">
+      <p class="eyebrow" id="resultEyebrow">決着</p>
+      <h1 id="resultHeadline">―</h1>
+      <p class="mode-lead" id="resultReason"></p>
+      <button id="resultRestart" class="mode-btn mode-btn-solo">
+        <span class="mode-btn-title">もう一度</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- 盤面 -->
+  <main id="board" class="board" hidden>
+
+    <!-- 相手エリア -->
+    <section class="side side-foe">
+      <div class="side-bar" data-layout-id="相手情報">
+        <div class="identity">
+          <span class="identity-name" id="foeName">相手</span>
+          <span class="life" id="foeLife">Life 0</span>
         </div>
-        <div class="zone">
-          <h3>場</h3>
-          <div id="playerB-field" class="cards-container">
-            <div class="empty-zone">カードが無い</div>
-          </div>
+        <div class="resources">
+          <div class="pips" id="foePips" title="リザーブ"></div>
+          <button class="zone-count" id="foeDeck" type="button">デッキ 0</button>
+          <button class="zone-count" id="foeTrash" type="button">トラッシュ 0</button>
         </div>
       </div>
+      <div class="hand hand-foe" id="foeHand" data-layout-id="相手手札"></div>
+      <div class="field" id="foeField" data-layout-id="相手フィールド"></div>
+    </section>
 
-      <!-- ゲーム中央 -->
-      <div class="game-center">
-        <div class="game-info">
-          <p>ゲーム開始ボタンでゲームを始めてください</p>
+    <!-- ターン表示 -->
+    <div class="turn-banner" id="turnBanner" data-layout-id="ターン表示">
+      <span id="turnLabel">―</span>
+      <button id="endStepBtn" class="btn-ghost" hidden>ステップを終了</button>
+    </div>
+
+    <!-- 自分エリア -->
+    <section class="side side-self">
+      <div class="field" id="selfField" data-layout-id="自分フィールド"></div>
+      <div class="side-bar" data-layout-id="自分情報">
+        <div class="identity">
+          <span class="identity-name" id="selfName">自分</span>
+          <span class="life" id="selfLife">Life 0</span>
+        </div>
+        <div class="resources">
+          <div class="pips" id="selfPips" title="リザーブ"></div>
+          <button class="zone-count" id="selfDeck" type="button">デッキ 0</button>
+          <button class="zone-count" id="selfTrash" type="button">トラッシュ 0</button>
         </div>
       </div>
+      <div class="hand" id="selfHand" data-layout-id="自分手札"></div>
+    </section>
+  </main>
 
-      <!-- プレイヤーA（プレイヤー） -->
-      <div class="player-section player-a">
-        <div class="zone">
-          <h3>手札</h3>
-          <div id="playerA-hand" class="cards-container">
-            <div class="empty-zone">カードが無い</div>
-          </div>
-        </div>
-        <div class="zone">
-          <h3>場</h3>
-          <div id="playerA-field" class="cards-container">
-            <div class="empty-zone">カードが無い</div>
-          </div>
-        </div>
-        <div class="player-header">
-          <h2 id="playerA-name">Alice</h2>
-          <div class="life-bar">
-            <div id="playerA-life" class="life-fill"></div>
-            <span id="playerA-life-text" class="life-text">20 / 20</span>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <footer class="footer">
-      <p>TypeScript TCG Foundation | iPad対応版</p>
-    </footer>
+  <!-- コア移動パネル -->
+  <div id="coreMovePanel" class="popover" hidden>
+    <p class="popover-title" id="coreMoveTitle">コアを移動</p>
+    <p class="popover-hint" id="coreMoveHint"></p>
+    <div class="popover-row">
+      <button id="coreMoveMinus" class="stepper-btn" type="button">−</button>
+      <span id="coreMoveAmount" class="stepper-value">1</span>
+      <button id="coreMovePlus" class="stepper-btn" type="button">＋</button>
+    </div>
+    <div class="popover-actions">
+      <button id="coreMoveToCard" class="btn-solid" type="button">リザーブから乗せる</button>
+      <button id="coreMoveToReserve" class="btn-outline" type="button">リザーブへ戻す</button>
+      <button id="coreMoveSoulBtn" class="btn-outline" type="button" hidden>ソウルコアをリザーブへ</button>
+      <button id="coreMoveFromReserveSoulBtn" class="btn-solid" type="button" hidden>リザーブからソウルコアを乗せる</button>
+    </div>
+    <button id="coreMoveClose" class="popover-close" type="button">閉じる</button>
   </div>
 
+  <!-- トラッシュ一覧 -->
+  <div id="trashPanel" class="popover" hidden>
+    <p class="popover-title" id="trashTitle">トラッシュ</p>
+    <div class="trash-list" id="trashList"></div>
+    <button id="trashClose" class="popover-close" type="button">閉じる</button>
+  </div>
+
+  <!-- カード効果情報 -->
+  <div id="cardEffectPanel" class="popover" hidden>
+    <p class="popover-title" id="cardEffectName">―</p>
+    <p class="card-effect-text" id="cardEffectText"></p>
+    <button id="cardEffectClose" class="popover-close" type="button">閉じる</button>
+  </div>
+
+  <!-- カード拡大表示 -->
+  <div id="cardDetailPanel" class="popover popover-card-detail" hidden>
+    <div class="card-detail-content" id="cardDetailContent"></div>
+    <button id="cardDetailClose" class="popover-close" type="button">閉じる</button>
+  </div>
+
+  <!-- ブロック判断 -->
+  <div id="blockPanel" class="popover popover-block" hidden>
+    <p class="popover-title">ブロックしますか？</p>
+    <div class="block-attacker" id="blockAttacker"></div>
+    <p class="popover-hint">ブロックするスピリットを選ぶか、ブロックしないを選んでください。</p>
+    <div class="field field-compact" id="blockCandidates"></div>
+    <button id="blockSkip" class="btn-outline" type="button">ブロックしない</button>
+  </div>
+
+  <!-- 割り込み（フラッシュ）の判断 -->
+  <div id="flashPanel" class="popover popover-flash" hidden>
+    <p class="popover-title">割り込みますか？</p>
+    <p class="popover-hint" id="flashHint"></p>
+    <button id="flashPass" class="btn-outline" type="button">何もしない</button>
+  </div>
+
+  <!-- 起動効果の発動 -->
+  <div id="activatePanel" class="popover popover-activate" hidden>
+    <p class="popover-title">使える効果</p>
+    <p class="popover-hint">撃ちたい効果を選んでください（撃たなくてもかまいません）</p>
+    <div id="activateList" class="effect-target-list"></div>
+  </div>
+
+  <!-- 効果の対象選択 -->
+  <div id="effectPanel" class="popover" hidden>
+    <p class="popover-title" id="effectTitle">効果</p>
+    <p class="popover-hint" id="effectHint">対象を選んでください</p>
+    <div id="effectTargetList" class="effect-target-list"></div>
+    <div class="popover-actions">
+      <button id="effectConfirm" class="btn-solid" type="button" hidden>決定</button>
+      <button id="effectSkip" class="btn-outline" type="button" hidden>選ばない</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- ゲーム本体。サーバーが無くても遊べるよう、/api/ の問い合わせをこの中で受ける。
+       game.js より先に読み込む必要があるので、いちばん上に置く。 -->
+  <script src="ゲーム本体.js"></script>
   <script src="game.js"></script>
+  <!-- layout.js は読み込み時に セーブデータ へ名乗り出るので、こちらを先に置く -->
+  <script src="セーブデータ.js"></script>
+  <script src="layout.js"></script>
+
+  <!-- 通信が無くても遊べるようにする。file:// で開いたときは登録できないので黙って諦める。 -->
+  <script>
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>
