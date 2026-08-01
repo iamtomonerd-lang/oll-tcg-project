@@ -766,3 +766,121 @@ button {
 [hidden] {
   display: none !important;
 }
+
+/* === 版の表示 === */
+/*
+ * デッキ選択画面の下に置く。押すと「最新かどうか」をその場で確かめられる。
+ * 遊んでいる間は視界に入らないよう、盤面には出さない。
+ */
+.version-line {
+  /* 中央下はトースト、右下は「データ」「配置」が使っているので左下に置く */
+  position: fixed;
+  left: 14px;
+  bottom: 12px;
+  z-index: 1050;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px 9px;
+  max-width: calc(100vw - 24px);
+  padding: 6px 14px;
+  background: rgba(10, 12, 18, 0.72);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1.5;
+  cursor: pointer;
+  opacity: 0.62;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+
+.version-line:hover {
+  opacity: 1;
+  border-color: var(--line);
+}
+
+.version-line[hidden] {
+  display: none;
+}
+
+.version-when {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.version-what {
+  opacity: 0.85;
+}
+
+.version-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  opacity: 0.5;
+}
+
+/* === 新しい版のお知らせ === */
+
+#updateBar {
+  position: fixed;
+  left: 50%;
+  /* トースト（bottom:24px）より上に出す */
+  bottom: 74px;
+  transform: translateX(-50%);
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 24px);
+  padding: 10px 12px 10px 16px;
+  background: var(--ink-2);
+  border: 1px solid var(--core);
+  border-radius: 999px;
+  box-shadow: 0 18px 44px -14px rgba(0, 0, 0, 0.85);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.update-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.update-text b {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#updateBar button {
+  flex: none;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--core);
+  background: var(--core);
+  color: #10131b;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+#updateBar button.update-later {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+/* 「最新です」の返事。押した場所そのものが一瞬だけ答える。 */
+.version-line.version-ok {
+  opacity: 1;
+  border-color: var(--core);
+  color: var(--core);
+}
