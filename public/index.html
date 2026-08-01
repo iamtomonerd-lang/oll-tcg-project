@@ -257,6 +257,8 @@
        game.js より先に読み込む必要があるので、いちばん上に置く。 -->
   <script src="ゲーム本体.js"></script>
   <script src="game.js"></script>
+  <!-- layout.js は読み込み時に セーブデータ へ名乗り出るので、こちらを先に置く -->
+  <script src="セーブデータ.js"></script>
   <script src="layout.js"></script>
 
   <!-- 通信が無くても遊べるようにする。file:// で開いたときは登録できないので黙って諦める。 -->

@@ -273,3 +273,193 @@
   border-color: var(--core);
   color: var(--core);
 }
+
+/* === セーブデータのパネル === */
+
+/* 入口のボタン。配置ボタンの左隣に並べる。 */
+#saveDataBtn {
+  position: fixed;
+  right: 92px;
+  bottom: 14px;
+  z-index: 1100;
+  padding: 7px 12px;
+  background: rgba(23, 27, 38, 0.85);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-chrome);
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.55;
+  transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+}
+
+#saveDataBtn:hover {
+  opacity: 1;
+  border-color: var(--core);
+  color: var(--core);
+}
+
+/* 画面の中央に出す。配置パネルと違って、盤面を見ながら操作するものではないため。 */
+#savePanel {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1300;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.85);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.save-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+#savePanel h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--core);
+}
+
+.save-x {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 15px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.save-x:hover {
+  color: var(--text);
+}
+
+.save-body {
+  padding: 14px 16px 16px;
+}
+
+.save-lead {
+  margin: 0 0 12px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.save-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.save-tab {
+  flex: 1;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.save-tab.selected {
+  border-color: var(--core);
+  color: var(--core);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.save-contents {
+  margin-bottom: 10px;
+}
+
+.save-listtitle {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+}
+
+.save-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.save-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.save-list li span {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.save-empty {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--text-faint);
+  line-height: 1.7;
+  text-align: center;
+}
+
+/* セーブ文字列そのもの。折り返して全体が見えるようにする。 */
+.save-text {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  background: var(--ink-1, rgba(0, 0, 0, 0.35));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  resize: vertical;
+  word-break: break-all;
+  /* iPadで勝手に拡大されないようにする */
+  -webkit-text-size-adjust: 100%;
+}
+
+.save-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.save-actions button {
+  flex: 1;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.save-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

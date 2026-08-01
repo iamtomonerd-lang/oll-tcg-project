@@ -9,7 +9,7 @@
 // 根ではない場所に置かれるため、絶対パスだと外れてしまう。
 
 // 中身を変えたらここを上げる。古い保存分は activate で捨てる。
-const 保管名 = 'oll-tcg-v2';
+const 保管名 = 'oll-tcg-v3';
 
 const 最初に取っておくもの = [
   './',
@@ -18,6 +18,7 @@ const 最初に取っておくもの = [
   './layout.css',
   './ゲーム本体.js',
   './game.js',
+  './セーブデータ.js',
   './layout.js',
   './manifest.json',
   './favicon.png',
