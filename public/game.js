@@ -22,6 +22,7 @@ const CARD_ART = {
   '26RSD01-011': 'cards/26RSD01-011.png',
   '26RSD01-012': 'cards/26RSD01-012.png',
   '26RSD01-013': 'cards/26RSD01-013.png',
+  '26RSD01-014': 'cards/26RSD01-014.png',
 };
 
 const el = id => document.getElementById(id);
@@ -110,6 +111,7 @@ for (const btn of document.querySelectorAll('.deck-btn')) {
       'ganiki': '浮遊岩域',
       'breakclaw': 'ブレイククロー',
       'offering': 'オフェリングドロー',
+      'flame': 'フレイムハリケーン',
     };
     const deckName = deckNames[btn.dataset.deck] || 'デッキ';
     el('modeEyebrow').textContent = `${deckName}で対戦`;
