@@ -33,6 +33,7 @@ const CARD_ART: { [key: string]: string } = {
   '26RSD01-013': '/cards/26RSD01-013.png',
   '26RSD01-014': '/cards/26RSD01-014.png',
   '26RSD01-X01': '/cards/26RSD01-X01.png',
+  '26RSD01-X02': '/cards/26RSD01-X02.png',
 };
 
 const el = (id: string): HTMLElement | null => document.getElementById(id);
