@@ -16,5 +16,10 @@
     "moduleResolution": "node"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/main.ts", "src/index.html", "src/styles.css", "src/game-state.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    // ブラウザ側は DOM の型が要るので tsconfig.ブラウザ.json で別に見る
+    "src/ブラウザ"
+  ]
 }

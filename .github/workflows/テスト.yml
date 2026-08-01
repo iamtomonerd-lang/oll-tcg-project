@@ -1,0 +1,36 @@
+# push とプルリクエストのたびにテストを流す。
+#
+# iPadだけで開発するときは手元でテストを流せないので、
+# 「壊れていないか」をここで見る。結果はプルリクエストの画面に出る。
+
+name: テスト
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  # 手で流したいときのために、ボタンからも動かせるようにしておく
+  workflow_dispatch:
+
+jobs:
+  テスト:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: 依存を入れる
+        run: npm ci
+
+      - name: 型を確かめる（TypeScriptをビルド）
+        run: npm run build
+
+      - name: ブラウザ用にまとめられるか確かめる
+        run: npm run build:browser
+
+      - name: テストを流す
+        run: node --test "dist/**/*.test.js"

@@ -9,3 +9,6 @@ dist/
 *.test.js
 # 配置データ（ユーザー生成）
 public/レイアウト.json*
+
+# ブラウザ用にまとめたもの（npm run build:browser で作る）
+public/ゲーム本体.js

@@ -2,8 +2,19 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- iPadで指がずれても拡大しないように。盤面はドラッグ操作が主なため。 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <title>バトルスピリッツ・スタン</title>
+  <meta name="theme-color" content="#0a0c12">
+
+  <!-- ホーム画面に追加したときの見た目（iPadはmanifestだけでは足りないので個別に指定） -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="バトスピ">
+
   <link rel="stylesheet" href="game.css">
   <link rel="stylesheet" href="layout.css">
 </head>
@@ -242,7 +253,19 @@
 
   <div id="toast" class="toast" hidden></div>
 
+  <!-- ゲーム本体。サーバーが無くても遊べるよう、/api/ の問い合わせをこの中で受ける。
+       game.js より先に読み込む必要があるので、いちばん上に置く。 -->
+  <script src="ゲーム本体.js"></script>
   <script src="game.js"></script>
   <script src="layout.js"></script>
+
+  <!-- 通信が無くても遊べるようにする。file:// で開いたときは登録できないので黙って諦める。 -->
+  <script>
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>
