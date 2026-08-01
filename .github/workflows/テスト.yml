@@ -13,7 +13,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  テスト:
+  # ジョブIDは英数字にする（公開.yml と同じ理由）。画面に出るのは name: のほう。
+  test:
+    name: テスト
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
