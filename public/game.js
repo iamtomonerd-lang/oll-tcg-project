@@ -19,6 +19,7 @@ const CARD_ART = {
   '26RSD01-008': 'cards/26RSD01-008.png',
   '26RSD01-009': 'cards/26RSD01-009.png',
   '26RSD01-010': 'cards/26RSD01-010.png',
+  '26RSD01-011': 'cards/26RSD01-011.png',
 };
 
 const el = id => document.getElementById(id);
@@ -104,6 +105,7 @@ for (const btn of document.querySelectorAll('.deck-btn')) {
       'seltarius': 'セルタリウス',
       'leufalus': '飛傑レウファルス',
       'fuugagan': '最奥：風牙岩',
+      'ganiki': '浮遊岩域',
     };
     const deckName = deckNames[btn.dataset.deck] || 'デッキ';
     el('modeEyebrow').textContent = `${deckName}で対戦`;
