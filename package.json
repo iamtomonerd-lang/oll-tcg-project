@@ -7,12 +7,12 @@
   "scripts": {
     "build": "tsc",
     "typecheck:browser": "tsc -p tsconfig.ブラウザ.json",
-    "build:browser": "npm run typecheck:browser && esbuild src/ブラウザ/起動.ts --bundle --format=iife --target=es2020 --minify --outfile=public/ゲーム本体.js",
+    "build:browser": "npm run typecheck:browser && node scripts/ブラウザ用にまとめる.mjs",
     "build:all": "npm run build && npm run build:browser",
     "dev": "tsc --watch",
     "test": "npm run build && node --test \"dist/**/*.test.js\"",
     "lint": "eslint src",
-    "clean": "rm -rf dist public/ゲーム本体.js",
+    "clean": "rm -rf dist public/ゲーム本体.js public/版.json",
     "server": "npm run build:all && node dist/サーバー/ウェブサーバー.js"
   },
   "keywords": [

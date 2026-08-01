@@ -20,6 +20,7 @@ const 最初に取っておくもの = [
   './game.js',
   './セーブデータ.js',
   './layout.js',
+  './版表示.js',
   './manifest.json',
   './favicon.png',
   './icon-192.png',
@@ -59,6 +60,14 @@ self.addEventListener('fetch', 事象 => {
   const 要求 = 事象.request;
   if (要求.method !== 'GET') return;
   if (new URL(要求.url).origin !== self.location.origin) return;
+
+  // 版.json は「今サーバーに何が置かれているか」を聞くための札。
+  // ここを手元の保存分で答えてしまうと、更新が出ていても永久に気づけない。
+  // 通信できなければ答えない（＝呼んだ側が「確かめられなかった」と分かる）。
+  if (new URL(要求.url).pathname.endsWith('/版.json')) {
+    事象.respondWith(fetch(要求, { cache: 'no-store' }));
+    return;
+  }
 
   事象.respondWith(
     fetch(要求)

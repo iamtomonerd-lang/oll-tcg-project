@@ -12,3 +12,6 @@ public/レイアウト.json*
 
 # ブラウザ用にまとめたもの（npm run build:browser で作る）
 public/ゲーム本体.js
+
+# ビルドで作られる版の印
+public/版.json
