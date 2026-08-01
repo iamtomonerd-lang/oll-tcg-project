@@ -404,17 +404,22 @@ function renderBoard(state) {
       ? `${pending.最大}体`
       : `${pending.最小}〜${pending.最大}体`;
     el('effectTitle').textContent = `${pending.トリガー元カード名} の効果`;
-    el('effectHint').textContent = pending.任意
-      ? `対象を${何体}まで選べます（選ばなくてもかまいません）`
-      : `対象を${何体}選んでください`;
+    // 「好きな順で」の並べ替えは、選ぶ／選ばないではなく順番を決める場面。
+    // 押した順がそのまま並び順になるので、その旨と何番目かを見せる。
+    el('effectHint').textContent = pending.順番を決める
+      ? pending.問い || '置く順番に押してください（先に押したものが上）'
+      : pending.任意
+        ? `対象を${何体}まで選べます（選ばなくてもかまいません）`
+        : `対象を${何体}選んでください`;
 
     const 対象一覧 = el('effectTargetList');
     対象一覧.innerHTML = '';
     for (const 対象 of pending.対象候補一覧) {
       const btn = document.createElement('button');
-      const 選択中 = effectSelection.includes(対象.識別子);
-      btn.className = 選択中 ? 'effect-target-btn selected' : 'effect-target-btn';
-      btn.textContent = `${対象.名前}（BP ${対象.BP.toLocaleString()}）`;
+      const 順番 = effectSelection.indexOf(対象.識別子);
+      btn.className = 順番 >= 0 ? 'effect-target-btn selected' : 'effect-target-btn';
+      const 番号 = pending.順番を決める && 順番 >= 0 ? `${順番 + 1}. ` : '';
+      btn.textContent = `${番号}${対象.名前}（BP ${対象.BP.toLocaleString()}）`;
       btn.addEventListener('click', () => toggleEffectTarget(対象.識別子, pending));
       対象一覧.appendChild(btn);
     }
