@@ -30,7 +30,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  組み立て:
+  # ジョブIDとステップIDは英数字にする。
+  # ${{ steps.X.outputs.Y }} のような式が日本語の識別子を解釈できないため。
+  # 画面に出るのは name: のほうなので、そちらは日本語のままでよい。
+  build:
+    name: 組み立て
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,12 +71,14 @@ jobs:
         with:
           path: 公開物
 
-  公開:
-    needs: 組み立て
+  deploy:
+    name: 公開
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.公開手順.outputs.page_url }}
+      url: ${{ steps.pages.outputs.page_url }}
     steps:
-      - id: 公開手順
+      - id: pages
+        name: Pagesへ置く
         uses: actions/deploy-pages@v4
