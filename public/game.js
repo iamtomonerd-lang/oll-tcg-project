@@ -739,4 +739,8 @@ el('trashClose').addEventListener('click', () => {
   el('trashPanel').hidden = true;
 });
 
-showOnly(modeScreen);
+// 最初に出すのはデッキ選択。
+// ここを modeScreen にしていたため、デッキを選ぶ画面（＝「デッキを組む」の入口がある場所）へ
+// 「← デッキを変更」を押さないと辿り着けず、組む手段が隠れていた。
+// index.html でも deckScreen だけが hidden でない＝こちらが本来の入口。
+showOnly(deckScreen);
