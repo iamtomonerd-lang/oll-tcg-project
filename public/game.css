@@ -1100,3 +1100,35 @@ body.deck-building #saveDataBtn,
 body.deck-building #layoutEditBtn {
   display: none;
 }
+
+/* カード一覧を読み込めなかったとき。押しても無反応に見えないよう画面内に出す。 */
+.deck-trouble {
+  grid-column: 1 / -1;
+  max-width: 460px;
+  margin: 40px auto;
+  padding: 24px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.deck-trouble-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.deck-trouble-why {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.deck-trouble-hint {
+  margin: 0 0 16px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-faint);
+}
