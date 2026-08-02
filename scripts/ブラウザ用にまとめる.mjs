@@ -35,7 +35,28 @@ function gitで聞く(引数, 既定) {
 // CIでは GITHUB_SHA が入る。手元では git に聞く。
 const 長いSHA = process.env.GITHUB_SHA || gitで聞く('rev-parse HEAD', '');
 const 印 = 長いSHA ? 長いSHA.slice(0, 7) : '手元';
-const 件名 = gitで聞く('log -1 --pretty=%s', '（手元のビルド）');
+
+// 何が入ったかを人が確かめられるようにするための一行。
+//
+// main の先頭はたいていマージコミットで、その件名は
+// 「Merge pull request #6 from ...」というブランチ名の羅列になる。
+// これでは何が変わったのか分からず、確認の役に立たない。
+// GitHubはマージコミットの本文1行目にプルリクエストの題を入れるので、そちらを使う。
+function 変更の説明を求める() {
+  const 件名 = gitで聞く('log -1 --pretty=%s', '');
+  if (!件名) return '（手元のビルド）';
+
+  const マージか = /^Merge (pull request|branch|remote-tracking branch)\b/.test(件名);
+  if (!マージか) return 件名;
+
+  const 本文の1行目 = gitで聞く('log -1 --pretty=%b', '')
+    .split('\n')
+    .map(行 => 行.trim())
+    .find(行 => 行 !== '');
+  return 本文の1行目 || 件名;
+}
+
+const 件名 = 変更の説明を求める();
 
 // 手元で未コミットの変更を抱えたままビルドしたときは、それが分かるようにする。
 // 画面の表示と実際のコードが食い違って悩まないため。

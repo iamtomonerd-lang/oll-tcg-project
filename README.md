@@ -35,7 +35,7 @@ GitHubの `Settings` → `Pages` → `Build and deployment` の `Source` を
 |---|---|
 | コードを変える | Claude Code（claude.ai/code）に頼む |
 | 壊れていないか見る | push すると GitHub Actions がテストを流す。結果はプルリクエストの画面に出る |
-| 動きを確かめる | `main` に入れば数分で公開URLに反映される |
+| 動きを確かめる | `main` に入れば数分で公開URLに反映される（10分おきの見回りがあるので取りこぼさない） |
 | 見た目を直す | ゲーム画面右下の「配置」ボタンから、指でドラッグして調整できる |
 
 配置の調整結果はブラウザに残る（`localStorage`）。ゲームを更新しても消えない。
