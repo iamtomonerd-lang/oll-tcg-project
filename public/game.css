@@ -884,3 +884,219 @@ button {
   border-color: var(--core);
   color: var(--core);
 }
+
+/* === デッキ構築 === */
+
+#deckBuildScreen {
+  /* overlay-screen の中央寄せではなく、上下いっぱいに使う */
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+}
+
+.deck-build {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  max-height: 100vh;
+}
+
+.deck-build-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.deck-build-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.deck-build-lead {
+  grid-column: 1;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.deck-build-head button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+/* カードの一覧。iPadの横幅で2〜3列に並ぶ。 */
+.deck-card-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 8px;
+  padding: 14px 18px;
+  align-content: start;
+}
+
+.deck-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+}
+
+.deck-card.picked {
+  border-color: var(--core);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.deck-card-art {
+  flex: none;
+  width: 42px;
+  height: 58px;
+  border-radius: 4px;
+  background-size: cover;
+  /* カード絵は上のほうに顔が来るので、上寄せで切る */
+  background-position: center 22%;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.deck-card-noart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-faint);
+  border: 1px dashed var(--line);
+}
+
+.deck-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.deck-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deck-card-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deck-card-count {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* 指で押せる大きさを確保する（iPadで隣を誤爆しないため） */
+.deck-card-count button {
+  width: 38px;
+  height: 38px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.deck-card-count button:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.deck-card-count button:not(:disabled):active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.deck-num {
+  min-width: 26px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.deck-build-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line-soft);
+  background: var(--ink-2);
+  /* iPadのホームバーに隠れないように */
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.deck-foot-left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.deck-total {
+  font-size: 19px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+.deck-total.deck-ok {
+  color: var(--core);
+}
+
+.deck-total.deck-over {
+  color: var(--danger);
+}
+
+.deck-why {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.deck-foot-right {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.deck-foot-right button {
+  padding: 10px 16px;
+  font-size: 13px;
+}
+
+.deck-foot-right button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* デッキ構築の画面は下まで使うので、隅に居座るものを引っ込める */
+body.deck-building #versionLine,
+body.deck-building #saveDataBtn,
+body.deck-building #layoutEditBtn {
+  display: none;
+}

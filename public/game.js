@@ -97,6 +97,15 @@ function applyState(state) {
 
 // === デッキ選択 ===
 
+// デッキ構築の画面から「この40枚で対戦」と言われたときの入口。
+// game.js は組み立ての中身を知らず、選ばれたことだけを受け取る。
+window.組んだデッキで対戦する = 構築 => {
+  window.組んだデッキ = 構築;
+  selectedDeck = 'custom';
+  el('modeEyebrow').textContent = '組んだデッキで対戦';
+  showOnly(modeScreen);
+};
+
 for (const btn of document.querySelectorAll('.deck-btn')) {
   btn.addEventListener('click', () => {
     selectedDeck = btn.dataset.deck;
@@ -120,6 +129,7 @@ for (const btn of document.querySelectorAll('.deck-btn')) {
     const deckName = deckNames[btn.dataset.deck] || 'デッキ';
     el('modeEyebrow').textContent = `${deckName}で対戦`;
     showOnly(modeScreen);
+    window.dispatchEvent(new CustomEvent('デッキを選んだ', { detail: btn.dataset.deck }));
   });
 }
 
@@ -132,7 +142,10 @@ el('deckBack').addEventListener('click', () => {
 for (const btn of document.querySelectorAll('.mode-btn[data-mode]')) {
   btn.addEventListener('click', async () => {
     viewer = 'p1';
-    const state = await api('POST', '/api/game/start', { mode: btn.dataset.mode, deck: selectedDeck });
+    // 組んだデッキを使うときは、その中身も一緒に送る（デッキ構築.js が入れる）
+    const 送るもの = { mode: btn.dataset.mode, deck: selectedDeck };
+    if (selectedDeck === 'custom') 送るもの.構築 = window.組んだデッキ ?? null;
+    const state = await api('POST', '/api/game/start', 送るもの);
     applyState(state);
   });
 }
@@ -196,6 +209,9 @@ function cardPipsHTML(count, hasSoul) {
   if (hasSoul) parts.push('<span class="pip pip-soul"></span>');
   return `<div class="card-pips">${parts.join('')}</div>`;
 }
+
+// デッキ構築の画面からも同じ絵柄を引けるようにする
+window.CARD_ART_URL = cardNumber => (cardNumber && CARD_ART[cardNumber]) || null;
 
 function artURL(cardNumber) {
   return cardNumber && CARD_ART[cardNumber] ? CARD_ART[cardNumber] : null;
