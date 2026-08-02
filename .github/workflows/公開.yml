@@ -16,12 +16,16 @@ name: 公開
 on:
   push:
     branches: [main]
-  # 取りこぼしを拾うための見回り。
+  # 取りこぼしを拾うための見回り（保険）。
   #
   # push だけに頼れない事情がある：GitHubアプリのトークンでマージすると、
   # その push ではワークフローが起動しない。実際にそれで公開が止まり、
   # 気づかないまま古い版が残ったことがある。
-  # マージの仕方に関係なく届くよう、定期的に「公開済みと違うか」を見る。
+  #
+  # ただし GitHub の定期実行は「best effort」で、混んでいると大きく遅れるか
+  # 飛ばされることがある。実際に */10 で50分以上走らなかったことがあるので、
+  # これを主たる経路にしてはいけない。
+  # 確実に届けたいときは、マージのあとに Run workflow で起こすこと。
   schedule:
     - cron: '*/10 * * * *'
   workflow_dispatch:
@@ -60,7 +64,10 @@ jobs:
         name: 公開済みのものと見比べる
         env:
           GH_TOKEN: ${{ github.token }}
-          FORCE: ${{ inputs.force }}
+          # inputs コンテキストは workflow_dispatch / workflow_call でしか定義されない。
+          # schedule や push から起動したときに参照すると具合が悪いので、
+          # イベント種別に関係なく引ける github.event.inputs を使う（無ければ空になる）。
+          FORCE: ${{ github.event.inputs.force }}
         run: |
           set -euo pipefail
           current='${{ github.sha }}'
