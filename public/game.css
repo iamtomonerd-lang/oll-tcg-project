@@ -887,11 +887,29 @@ button {
 
 /* === デッキ構築 === */
 
+/*
+ * 他の画面（デッキ選択・モード選択など）は showOnly が1つだけ残して他を隠すので、
+ * 通常フローの .overlay-screen（min-height:100vh）で成立している。
+ *
+ * デッキ構築はその仕組みの外側にあり、開いている画面に重ねて出す。
+ * 通常フローのままだと、下の画面に重ならず1画面ぶん下に置かれ、
+ * タップしても何も現れないように見えてしまう（実際そうなっていた）。
+ * 画面に貼り付けて、確実に手前に出す。
+ */
 #deckBuildScreen {
-  /* overlay-screen の中央寄せではなく、上下いっぱいに使う */
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  /* .overlay-screen の min-height:100vh を打ち消す（inset で高さは決まる） */
+  min-height: 0;
+  /* 中央寄せではなく、上下いっぱいに使う */
   align-items: stretch;
   justify-content: stretch;
   padding: 0;
+  /* 手前に出す以上、下の画面が透けないようにする */
+  background: var(--ink);
+  /* iPadで端まで引っ張ったときに下の画面が動かないように */
+  overscroll-behavior: contain;
 }
 
 .deck-build {
