@@ -32,7 +32,10 @@ test('ゲン_ボー: card definition is correct', () => {
   const card = ゲン_ボーを作成('genbo-1');
   const cardData = card.名称 as any;
 
-  assert.equal(card.名称.表示名, 'ゲン_ボー');
+  // 画面に出る名前はカード画像どおりの「ゲン＝ボー」。
+  // ファイル名と関数名がアンダースコアなのは、全角＝がJSの識別子に使えないため。
+  // （最奥：風牙岩 も同じ理由で 最奥_風牙岩.ts になっている）
+  assert.equal(card.名称.表示名, 'ゲン＝ボー');
   assert.equal(cardData.カードナンバー, '26RSD01-002');
   assert.equal(cardData.コスト, 3);
 });
