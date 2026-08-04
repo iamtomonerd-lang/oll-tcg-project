@@ -9,7 +9,7 @@
 // 根ではない場所に置かれるため、絶対パスだと外れてしまう。
 
 // 中身を変えたらここを上げる。古い保存分は activate で捨てる。
-const 保管名 = 'oll-tcg-v4';
+const 保管名 = 'oll-tcg-v5';
 
 const 最初に取っておくもの = [
   './',
@@ -70,8 +70,24 @@ self.addEventListener('fetch', 事象 => {
     return;
   }
 
+  // GitHub Pages は index.html にも ゲーム本体.js にも
+  // cache-control: max-age=600 を付けて返す。
+  // そのまま fetch すると、ブラウザが自分の10分以内の控えを返してしまい、
+  // 公開しなおしても最大10分は古いままになる。
+  // 「更新するボタンは出るのに更新されない」の原因がこれだった
+  // （版.json だけ no-store で聞いているので、帯は正しく出てしまう）。
+  //
+  // no-cache は「毎回サーバーに確かめる」であって「毎回まるごと取り直す」ではない。
+  // 変わっていなければ 304 が返るだけなので、通信量はほとんど増えない。
+  //
+  // navigate の要求は Request を作り直せない（例外になる）ので、URLから組み立てる。
+  const 確かめて取る =
+    要求.mode === 'navigate'
+      ? fetch(new Request(要求.url, { cache: 'no-cache', credentials: 'same-origin' }))
+      : fetch(要求, { cache: 'no-cache' });
+
   事象.respondWith(
-    fetch(要求)
+    確かめて取る
       .then(応答 => {
         if (応答 && 応答.status === 200 && 応答.type === 'basic') {
           const 控え = 応答.clone();
