@@ -887,11 +887,29 @@ button {
 
 /* === デッキ構築 === */
 
+/*
+ * 他の画面（デッキ選択・モード選択など）は showOnly が1つだけ残して他を隠すので、
+ * 通常フローの .overlay-screen（min-height:100vh）で成立している。
+ *
+ * デッキ構築はその仕組みの外側にあり、開いている画面に重ねて出す。
+ * 通常フローのままだと、下の画面に重ならず1画面ぶん下に置かれ、
+ * タップしても何も現れないように見えてしまう（実際そうなっていた）。
+ * 画面に貼り付けて、確実に手前に出す。
+ */
 #deckBuildScreen {
-  /* overlay-screen の中央寄せではなく、上下いっぱいに使う */
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  /* .overlay-screen の min-height:100vh を打ち消す（inset で高さは決まる） */
+  min-height: 0;
+  /* 中央寄せではなく、上下いっぱいに使う */
   align-items: stretch;
   justify-content: stretch;
   padding: 0;
+  /* 手前に出す以上、下の画面が透けないようにする */
+  background: var(--ink);
+  /* iPadで端まで引っ張ったときに下の画面が動かないように */
+  overscroll-behavior: contain;
 }
 
 .deck-build {
@@ -1099,4 +1117,36 @@ body.deck-building #versionLine,
 body.deck-building #saveDataBtn,
 body.deck-building #layoutEditBtn {
   display: none;
+}
+
+/* カード一覧を読み込めなかったとき。押しても無反応に見えないよう画面内に出す。 */
+.deck-trouble {
+  grid-column: 1 / -1;
+  max-width: 460px;
+  margin: 40px auto;
+  padding: 24px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.deck-trouble-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.deck-trouble-why {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.deck-trouble-hint {
+  margin: 0 0 16px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-faint);
 }

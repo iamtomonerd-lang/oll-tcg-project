@@ -303,12 +303,16 @@ function renderZoneRow(prefix, playerState) {
 function renderField(containerId, cards, classify) {
   const container = el(containerId);
   container.innerHTML = '';
-  const visibleCards = cards.filter(card => !card.待機状態 || card.待機理由 !== '消滅');
-  if (visibleCards.length === 0) {
+  // かつてここで待機理由「消滅」のカードを画面から隠していた。
+  // 中身では場に残っていたので、消えたように見えるのに軽減シンボルが
+  // 満たされたまま、という食い違いが起きていた。
+  // 消滅はルール処理でトラッシュへ行くようになったので、隠さずそのまま描く。
+  // 隠すと、また同じ壊れ方をしたときに画面から気づけなくなる。
+  if (cards.length === 0) {
     container.innerHTML = '<span class="field-empty">フィールドにカードがありません</span>';
     return;
   }
-  for (const card of visibleCards) {
+  for (const card of cards) {
     const mode = classify ? classify(card) : null;
     const cardEl = fieldCardEl(card, mode);
     if (mode === 'attackable') {

@@ -172,19 +172,24 @@
 
   // === 出入り口 ===
 
+  let 取り寄せの失敗 = '';
+
   async function カード帳を取り寄せる() {
     if (読み込み済み) return true;
+    取り寄せの失敗 = '';
     try {
       const 応答 = await fetch('/api/cards');
+      if (!応答.ok) throw new Error(`カード一覧を取れません（${応答.status}）`);
       const 結果 = await 応答.json();
       if (!結果.ok) throw new Error(結果.error ?? 'カード一覧を取れません');
-      見出し一覧 = 結果.カード;
+      見出し一覧 = 結果.カード ?? [];
+      if (見出し一覧.length === 0) throw new Error('カードが1枚も返ってきませんでした');
       番号の索引 = new Map(見出し一覧.map(項 => [項.カードナンバー, 項]));
       if (結果.決まり) Object.assign(決まり, 結果.決まり);
       読み込み済み = true;
       return true;
     } catch (e) {
-      伝える(e.message ?? 'カード一覧を取れませんでした');
+      取り寄せの失敗 = e.message ?? 'カード一覧を取れませんでした';
       return false;
     }
   }
@@ -194,12 +199,41 @@
     else console.log(文言);
   }
 
+  // 取り寄せに失敗したことを、画面の中に出す。
+  // 以前はここで黙って戻っていたため、押しても何も起きないように見えていた。
+  function 失敗を画面に出す() {
+    const 置き場 = 要素('deckCardList');
+    if (!置き場) return;
+    置き場.innerHTML = `
+      <div class="deck-trouble">
+        <p class="deck-trouble-title">カードの一覧を読み込めませんでした</p>
+        <p class="deck-trouble-why">${取り寄せの失敗}</p>
+        <p class="deck-trouble-hint">
+          古い版が残っていることがあります。左下の版表示から「更新する」を押すか、
+          ページを再読み込みしてください。
+        </p>
+        <button id="deckRetry" class="btn-solid" type="button">もう一度読み込む</button>
+      </div>
+    `;
+    要素('deckRetry')?.addEventListener('click', async () => {
+      if (await カード帳を取り寄せる()) 描き直す();
+      else 失敗を画面に出す();
+    });
+    足元を描く();
+  }
+
   async function 開く() {
-    if (!(await カード帳を取り寄せる())) return;
+    // 先に画面を出す。取り寄せに失敗しても「押したのに何も起きない」にはしない。
     要素('deckBuildScreen').hidden = false;
     // 画面の隅に居座っているもの（版表示・データ・配置）を引っ込める。
     // この画面は下まで使うので、重なって押せなくなる。
     document.body.classList.add('deck-building');
+
+    if (!(await カード帳を取り寄せる())) {
+      失敗を画面に出す();
+      伝える(取り寄せの失敗);
+      return;
+    }
     描き直す();
   }
 
