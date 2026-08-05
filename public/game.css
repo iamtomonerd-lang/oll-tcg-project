@@ -723,11 +723,23 @@ button {
   width: min(420px, calc(100vw - 32px));
 }
 
-/* 起動効果パネルは対象選択と重ならないよう左寄せに置く */
+/* 起動効果パネルは対象選択と重ならないよう左寄せに置く。
+   top を 50% のままにして transform を外すと、パネルが画面の中央から下へ伸びて
+   画面外へはみ出す。中身が増えると押せないボタンが出るので、
+   上端を決めて高さを制限し、あふれたら中でスクロールさせる。 */
 .popover-activate {
   width: min(380px, calc(100vw - 32px));
   left: 16px;
-  transform: none;
+  top: 50%;
+  transform: translateY(-50%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+/* 割り込みパネルの中の効果一覧も、増えたときにあふれないようにする */
+.popover-flash {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
 }
 
 .card.effect-selected {
@@ -1149,4 +1161,108 @@ body.deck-building #layoutEditBtn {
   font-size: 12px;
   line-height: 1.7;
   color: var(--text-faint);
+}
+
+/* === 効果選択のボタンに絵柄を敷く === */
+/*
+   デッキの上をめくって選ぶ効果（ハーリア・オフェリングドロー・飛剛アクライ）は、
+   名前だけだと何を拾うのか分かりにくい。トラッシュ一覧と同じく絵柄を出す。
+   文字が絵に負けないよう、上に半透明の膜を1枚敷く。
+*/
+.effect-target-btn {
+  position: relative;
+  overflow: hidden;
+  min-height: 44px;
+}
+
+.effect-target-btn .card-art {
+  opacity: 0.55;
+  background-size: cover;
+  background-position: center 22%;
+  pointer-events: none;
+}
+
+.effect-target-label {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-chrome);
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* === 支払い画面 === */
+/*
+   ふだんは出さない。リザーブだけで払えない／《継召》／《ソウルマジック》の
+   いずれかが絡むときだけ開く。
+*/
+.popover-pay {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.pay-section {
+  margin-bottom: 14px;
+}
+
+.pay-section-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.pay-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pay-source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pay-source {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-chrome);
+}
+
+.pay-source-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pay-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pay-stepper .stepper-btn {
+  width: 28px;
+  height: 28px;
+}
+
+.pay-stepper .stepper-value {
+  min-width: 64px;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* コアの移し先として選べるカード */
+.card.core-destination {
+  border-color: var(--core-strong);
+  box-shadow: 0 0 0 2px var(--core-soft), 0 0 20px -4px var(--core);
+  cursor: pointer;
 }

@@ -111,6 +111,7 @@ for (const btn of document.querySelectorAll('.deck-btn')) {
     selectedDeck = btn.dataset.deck;
     const deckNames = {
       'gungata': 'グン＝ガタ',
+      'rowamique': 'ロワミーク',
       'genbo': 'ゲン＝ボー',
       'mushaako': 'ムーシャッコ',
       'harria': 'ハーリア',
@@ -145,6 +146,10 @@ for (const btn of document.querySelectorAll('.mode-btn[data-mode]')) {
     // 組んだデッキを使うときは、その中身も一緒に送る（デッキ構築.js が入れる）
     const 送るもの = { mode: btn.dataset.mode, deck: selectedDeck };
     if (selectedDeck === 'custom') 送るもの.構築 = window.組んだデッキ ?? null;
+    // ?seed=123 を付けて開くと、同じ引きの試合を何度でも作れる。
+    // 画面の不具合を「直す前」「直した後」で比べるには、同じ試合である必要がある。
+    const 種 = new URLSearchParams(location.search).get('seed');
+    if (種 !== null && 種 !== '' && Number.isFinite(Number(種))) 送るもの.seed = Number(種);
     const state = await api('POST', '/api/game/start', 送るもの);
     applyState(state);
   });
@@ -322,7 +327,9 @@ function renderField(containerId, cards, classify) {
   for (const card of cards) {
     const mode = classify ? classify(card) : null;
     const cardEl = fieldCardEl(card, mode);
-    if (mode === 'attackable') {
+    if (mode === 'core-destination') {
+      cardEl.addEventListener('click', () => 移し先を決める(card.識別子));
+    } else if (mode === 'attackable') {
       cardEl.addEventListener('click', () => doAttack(card.識別子));
     } else if (mode === 'editable') {
       cardEl.addEventListener('click', () => openCoreMove(card));
@@ -387,13 +394,15 @@ function renderBoard(state) {
     flashPanel.hidden = true;
   }
 
-  // 今撃てる【起動】効果があればボタンとして並べる
+  // 今撃てる【起動】効果をボタンとして並べる。
+  //
+  // 窓が開いているあいだは、割り込みパネルの中へ入れる。
+  // 別々のパネルを重ねて出していたため、起動効果のパネルが
+  // 「何もしない」を覆い、撃たずに見送ることができなかった。
   const activatable = state.発動できる起動効果 || [];
   const activatePanel = el('activatePanel');
-  if (activatable.length > 0) {
-    activatePanel.hidden = false;
-    const 一覧 = el('activateList');
-    一覧.innerHTML = '';
+  const 効果ボタンを並べる = (host) => {
+    host.innerHTML = '';
     for (const 効果 of activatable) {
       const btn = document.createElement('button');
       btn.className = 'effect-target-btn';
@@ -401,10 +410,18 @@ function renderBoard(state) {
       btn.textContent = `${効果.カード名}${タイミング}`;
       btn.title = 効果.テキスト;
       btn.addEventListener('click', () => activateEffect(効果.効果識別子));
-      一覧.appendChild(btn);
+      host.appendChild(btn);
     }
-  } else {
+  };
+
+  if (flash) {
+    効果ボタンを並べる(el('flashActivateList'));
+    el('activateList').innerHTML = '';
     activatePanel.hidden = true;
+  } else {
+    el('flashActivateList').innerHTML = '';
+    activatePanel.hidden = activatable.length === 0;
+    効果ボタンを並べる(el('activateList'));
   }
 
   // 効果が対象選択で止まっていれば、その案内と候補を出す
@@ -451,8 +468,14 @@ function renderBoard(state) {
       const btn = document.createElement('button');
       const 順番 = effectSelection.indexOf(対象.識別子);
       btn.className = 順番 >= 0 ? 'effect-target-btn selected' : 'effect-target-btn';
+      // デッキの上をめくって選ぶ効果は、名前だけだと何を拾うのか分かりにくい。
+      // トラッシュ一覧と同じやり方で絵柄を背景に敷く。
+      applyArt(btn, 対象.カードナンバー);
       const 番号 = pending.順番を決める && 順番 >= 0 ? `${順番 + 1}. ` : '';
-      btn.textContent = `${番号}${対象.名前}（BP ${対象.BP.toLocaleString()}）`;
+      const ラベル = document.createElement('span');
+      ラベル.className = 'effect-target-label';
+      ラベル.textContent = `${番号}${対象.名前}（BP ${対象.BP.toLocaleString()}）`;
+      btn.appendChild(ラベル);
       btn.addEventListener('click', () => toggleEffectTarget(対象.識別子, pending));
       対象一覧.appendChild(btn);
     }
@@ -484,6 +507,10 @@ function renderBoard(state) {
     自分のターンで随意ステップ && (state.ステップ === 'メインステップ' || state.ステップ === '第2メインステップ');
 
   renderField('selfField', state.自分.フィールド, card => {
+    // コアの移し先を選んでいる最中は、移し先だけを押せるようにする
+    if (コアの移し先を選んでいる && activeCoreCard) {
+      return card.識別子 === activeCoreCard.識別子 ? null : 'core-destination';
+    }
     if (pending && pending.対象候補一覧.some(c => c.識別子 === card.識別子)) {
       return effectSelection.includes(card.識別子) ? 'effect-selected' : 'effect-target';
     }
@@ -510,7 +537,8 @@ function renderBoard(state) {
   selfHand.innerHTML = '';
   for (const card of state.自分.手札 || []) {
     const playable =
-      card.支払可能 && (メインステップ中 || (割り込みで使える && card.フラッシュで使えるか));
+      (card.支払可能 || card.場のコアも使えば支払えるか) &&
+      (メインステップ中 || (割り込みで使える && card.フラッシュで使えるか));
     const cardEl = handCardEl(card, playable);
     if (playable) {
       cardEl.addEventListener('click', () => doPlayCard(card));
@@ -550,20 +578,55 @@ function renderBoard(state) {
     blockPanel.hidden = true;
   }
 
-  el('coreMovePanel').hidden = true;
+  // 移し先を選んでいる最中はコア移動パネルを閉じない（案内文がその中にある）
+  if (!コアの移し先を選んでいる) {
+    el('coreMovePanel').hidden = true;
+  }
   el('trashPanel').hidden = true;
+
+  // 直近に効果が何をしたかを短く出す。
+  // 何も起きなかったときの理由もここに出るので、
+  // 「効果が働かない」と「条件を満たさなかった」を利用者が見分けられる。
+  効果ログを出す(state.効果ログ);
+}
+
+// 効果のログのうち、まだ見せていないぶんだけをトーストで出す
+let 見せたログ数 = 0;
+function 効果ログを出す(ログ) {
+  if (!Array.isArray(ログ)) return;
+  if (ログ.length < 見せたログ数) 見せたログ数 = 0; // 新しい試合で巻き戻った
+  const 新しい行 = ログ.slice(見せたログ数);
+  見せたログ数 = ログ.length;
+  if (新しい行.length > 0) {
+    showToast(新しい行.join(" / "));
+  }
 }
 
 // === アクション ===
 
 // 手札のカードは種別ごとに出し方が違う。
 // スピリットは召喚、ネクサスは配置、マジックは使用。
+const カードの送り先 = card =>
+  card.種別 === 'ネクサス' ? '/api/action/place'
+  : card.種別 === 'マジック' ? '/api/action/use'
+  : '/api/action/summon';
+
+// 支払い方を人が決める必要がある場面か。
+// ここに当てはまらなければ、これまで通り黙ってリザーブから払う。
+function 支払いを尋ねるべきか(card) {
+  if (window.設定 && window.設定.毎回支払いを選ぶ) return true;
+  if (!card.支払可能) return true;                 // リザーブだけでは足りない
+  if (card.継召で軽減できる枚数 > 0) return true;    // 《継召》が使える
+  if (card.ソウルマジックで使えるか) return true;    // 《ソウルマジック》が使える
+  return false;
+}
+
 async function doPlayCard(card) {
-  const 送り先 =
-    card.種別 === 'ネクサス' ? '/api/action/place'
-    : card.種別 === 'マジック' ? '/api/action/use'
-    : '/api/action/summon';
-  const state = await api('POST', 送り先, { as: viewer, cardId: card.識別子 });
+  if (支払いを尋ねるべきか(card)) {
+    openPayPanel(card);
+    return;
+  }
+  const state = await api('POST', カードの送り先(card), { as: viewer, cardId: card.識別子 });
   applyState(state);
 }
 
@@ -587,6 +650,221 @@ el('endStepBtn').addEventListener('click', async () => {
   applyState(state);
 });
 
+// === 支払い画面 ===
+//
+// 「どこから何個出すか」を人が決める。開くのは決められないと困る場面だけ。
+// これが無かったので、支払い元はいつもリザーブ固定で、
+// カードの上のコアも、ソウルコアの指定も、《継召》も《ソウルマジック》も使えなかった。
+
+let 支払い中のカード = null;
+let 支払いの内訳 = { コスト: [], 初期コア: [], 継召除外: [], ソウルマジック: false };
+
+// 出せる場所の一覧（リザーブと、自分の場のカード）
+function 支払い元の候補() {
+  const 候補 = [
+    {
+      鍵: 'リザーブ',
+      名前: 'リザーブ',
+      通常: lastState.自分.リザーブ.通常,
+      ソウル: lastState.自分.リザーブ.ソウルコア ? 1 : 0,
+    },
+  ];
+  for (const c of lastState.自分.フィールド) {
+    const ソウル = c.ソウルコア ? 1 : 0;
+    候補.push({
+      鍵: `カード:${c.識別子}`,
+      カードID: c.識別子,
+      名前: c.名前,
+      通常: c.コア数 - ソウル,
+      ソウル,
+    });
+  }
+  return 候補;
+}
+
+const 内訳の合計 = 一覧 => 一覧.reduce((合計, x) => 合計 + x.通常 + x.ソウル, 0);
+
+function openPayPanel(card) {
+  支払い中のカード = card;
+  支払いの内訳 = { コスト: [], 初期コア: [], 継召除外: [], ソウルマジック: false };
+
+  el('payTitle').textContent = `${card.名前} を出す`;
+
+  // 《ソウルマジック》
+  el('paySoulMagic').hidden = !card.ソウルマジックで使えるか;
+  el('paySoulMagicCheck').checked = false;
+
+  // 《継召》。トラッシュのEXシンボル持ちを、軽減できる枚数まで選べる。
+  const 継召候補 = lastState.自分.トラッシュ.filter(c => c.EXシンボル);
+  el('payKeishou').hidden = !(card.継召で軽減できる枚数 > 0 && 継召候補.length > 0);
+
+  // 初期コアが要るのはスピリットとネクサスだけ（マジックは場に出ない）
+  el('payInitial').hidden = card.種別 === 'マジック';
+
+  renderPayPanel();
+  el('payPanel').hidden = false;
+}
+
+function renderPayPanel() {
+  const card = 支払い中のカード;
+  if (!card) return;
+
+  const ソウルマジック = el('paySoulMagicCheck').checked;
+  支払いの内訳.ソウルマジック = ソウルマジック;
+
+  const 軽減枚数 = 支払いの内訳.継召除外.length;
+  const 必要コスト = ソウルマジック ? 0 : Math.max(0, card.コスト - 軽減枚数);
+  const 必要初期コア = card.種別 === 'マジック' ? 0 : card.最低必要数;
+
+  el('payHint').textContent = ソウルマジック
+    ? '《ソウルマジック》でソウルコア1個だけ払います。'
+    : `コストは${必要コスト}個ちょうど。カードには${必要初期コア}個以上置きます。`;
+
+  // 《継召》の候補
+  const 継召候補 = lastState.自分.トラッシュ.filter(c => c.EXシンボル);
+  const 継召一覧 = el('payKeishouList');
+  継召一覧.innerHTML = '';
+  for (const t of 継召候補) {
+    const 選択済み = 支払いの内訳.継召除外.includes(t.識別子);
+    const btn = document.createElement('button');
+    btn.className = 選択済み ? 'effect-target-btn selected' : 'effect-target-btn';
+    applyArt(btn, t.カードナンバー);
+    btn.textContent = t.名前;
+    btn.disabled =
+      !選択済み && 支払いの内訳.継召除外.length >= card.継召で軽減できる枚数;
+    btn.addEventListener('click', () => {
+      const i = 支払いの内訳.継召除外.indexOf(t.識別子);
+      if (i >= 0) 支払いの内訳.継召除外.splice(i, 1);
+      else 支払いの内訳.継召除外.push(t.識別子);
+      // 軽減が変われば必要コストも変わるので、指定を白紙に戻す
+      支払いの内訳.コスト = [];
+      renderPayPanel();
+    });
+    継召一覧.appendChild(btn);
+  }
+
+  el('payCostTitle').textContent = `コストに使うコア（${内訳の合計(支払いの内訳.コスト)}/${必要コスト}）`;
+  el('payInitialTitle').textContent =
+    `カードに置くコア（${内訳の合計(支払いの内訳.初期コア)}/${必要初期コア}以上）`;
+  el('payCost').hidden = ソウルマジック;
+
+  描く支払い元('payCostList', 'コスト', 必要コスト);
+  描く支払い元('payInitialList', '初期コア', null);
+
+  const 合計コスト = ソウルマジック ? 0 : 内訳の合計(支払いの内訳.コスト);
+  el('payConfirm').disabled =
+    合計コスト !== 必要コスト || 内訳の合計(支払いの内訳.初期コア) < 必要初期コア;
+}
+
+// 支払い元ごとに「通常コア」「ソウルコア」の増減ボタンを並べる。
+// 同じコアを2箇所に割り当てないよう、残り在庫はコストと初期コアを合わせて数える。
+function 描く支払い元(host識別子, 欄, 上限) {
+  const host = el(host識別子);
+  host.innerHTML = '';
+
+  for (const 候補 of 支払い元の候補()) {
+    const 取る = 名 =>
+      支払いの内訳[名].find(x => x.鍵 === 候補.鍵) ?? { 鍵: 候補.鍵, 通常: 0, ソウル: 0 };
+    const この欄 = 取る(欄);
+    const 別の欄 = 取る(欄 === 'コスト' ? '初期コア' : 'コスト');
+    const 残り通常 = 候補.通常 - この欄.通常 - 別の欄.通常;
+    const 残りソウル = 候補.ソウル - この欄.ソウル - 別の欄.ソウル;
+
+    const 行 = document.createElement('div');
+    行.className = 'pay-source';
+    行.innerHTML = `<span class="pay-source-name">${候補.名前}</span>`;
+
+    行.appendChild(
+      増減ボタン('通常', この欄.通常, 残り通常 > 0 && (上限 === null || 内訳の合計(支払いの内訳[欄]) < 上限), 差分 => {
+        変更する(欄, 候補, '通常', 差分);
+      })
+    );
+    if (候補.ソウル > 0) {
+      行.appendChild(
+        増減ボタン('ソウル', この欄.ソウル, 残りソウル > 0 && この欄.ソウル < 1 && (上限 === null || 内訳の合計(支払いの内訳[欄]) < 上限), 差分 => {
+          変更する(欄, 候補, 'ソウル', 差分);
+        })
+      );
+    }
+    host.appendChild(行);
+  }
+}
+
+function 増減ボタン(見出し, 現在, 増やせるか, 変える) {
+  const 枠 = document.createElement('span');
+  枠.className = 'pay-stepper';
+  const 減 = document.createElement('button');
+  減.type = 'button';
+  減.className = 'stepper-btn';
+  減.textContent = '−';
+  減.disabled = 現在 <= 0;
+  減.addEventListener('click', () => 変える(-1));
+  const 値 = document.createElement('span');
+  値.className = 'stepper-value';
+  値.textContent = `${見出し} ${現在}`;
+  const 増 = document.createElement('button');
+  増.type = 'button';
+  増.className = 'stepper-btn';
+  増.textContent = '＋';
+  増.disabled = !増やせるか;
+  増.addEventListener('click', () => 変える(1));
+  枠.append(減, 値, 増);
+  return 枠;
+}
+
+function 変更する(欄, 候補, 種類, 差分) {
+  let 項目 = 支払いの内訳[欄].find(x => x.鍵 === 候補.鍵);
+  if (!項目) {
+    項目 = { 鍵: 候補.鍵, カードID: 候補.カードID, 通常: 0, ソウル: 0 };
+    支払いの内訳[欄].push(項目);
+  }
+  項目[種類] = Math.max(0, 項目[種類] + 差分);
+  支払いの内訳[欄] = 支払いの内訳[欄].filter(x => x.通常 + x.ソウル > 0);
+  renderPayPanel();
+}
+
+// 画面の内訳を、APIが受け取る形に直す
+const 内訳をAPIの形に = 一覧 =>
+  一覧.map(x => ({
+    場所: x.鍵 === 'リザーブ' ? 'リザーブ' : 'カード',
+    カードID: x.カードID,
+    通常: x.通常,
+    ソウル: x.ソウル,
+  }));
+
+el('paySoulMagicCheck').addEventListener('change', () => {
+  支払いの内訳.コスト = [];
+  renderPayPanel();
+});
+
+el('payCancel').addEventListener('click', () => {
+  el('payPanel').hidden = true;
+  支払い中のカード = null;
+});
+
+el('payConfirm').addEventListener('click', async () => {
+  const card = 支払い中のカード;
+  if (!card) return;
+  const 支払い = {
+    コスト: 内訳をAPIの形に(支払いの内訳.コスト),
+    継召除外: 支払いの内訳.継召除外,
+  };
+  if (card.種別 !== 'マジック') {
+    支払い.初期コア = 内訳をAPIの形に(支払いの内訳.初期コア);
+  }
+  if (支払いの内訳.ソウルマジック) {
+    支払い.ソウルマジック = true;
+  }
+  el('payPanel').hidden = true;
+  支払い中のカード = null;
+  const state = await api('POST', カードの送り先(card), {
+    as: viewer,
+    cardId: card.識別子,
+    支払い,
+  });
+  applyState(state);
+});
+
 // === コア移動 ===
 
 function openCoreMove(card) {
@@ -601,6 +879,10 @@ function openCoreMove(card) {
   el('coreMoveSoulBtn').hidden = !card.ソウルコア;
   // リザーブにソウルコアがあれば、乗せるボタンを表示
   el('coreMoveFromReserveSoulBtn').hidden = !lastState || !lastState.自分.リザーブ.ソウルコア;
+  // ソウルコアを持っていれば、別のカードへ直に渡せる
+  el('coreMoveSoulToOtherCard').hidden = !card.ソウルコア;
+  el('coreMoveToCardHint').hidden = true;
+  コアの移し先を選んでいる = null;
   el('coreMovePanel').hidden = false;
 }
 
@@ -647,6 +929,52 @@ el('coreMoveToReserve').addEventListener('click', () => moveCore('toReserve'));
 el('coreMoveSoulBtn').addEventListener('click', () => moveCore('toReserve', true));
 el('coreMoveFromReserveSoulBtn').addEventListener('click', placeSoulCoreToCard);
 
+// カードからカードへ直に移す。
+// これが無いと、いったんリザーブへ戻してから乗せ直すことになり、
+// 「別々のスピリットの上のコアを入れ替える」ができなかった。
+let コアの移し先を選んでいる = null; // 'normal' | 'soul' | null
+
+function 移し先を選び始める(種類) {
+  if (!activeCoreCard) return;
+  コアの移し先を選んでいる = 種類;
+  el('coreMoveToCardHint').hidden = false;
+  el('coreMoveToCardHint').textContent =
+    種類 === 'soul'
+      ? 'ソウルコアを移す先のカードを押してください'
+      : `コア${coreMoveAmount}個を移す先のカードを押してください`;
+  renderBoard(lastState);
+}
+
+async function 移し先を決める(移動先カードID) {
+  const 元 = activeCoreCard;
+  const 種類 = コアの移し先を選んでいる;
+  if (!元 || !種類) return;
+  コアの移し先を選んでいる = null;
+  el('coreMoveToCardHint').hidden = true;
+  el('coreMovePanel').hidden = true;
+  activeCoreCard = null;
+
+  const エンドポイント = 種類 === 'soul' ? '/api/action/move-soul-core' : '/api/action/move-core';
+  const state = await api('POST', エンドポイント, {
+    as: viewer,
+    cardId: 元.識別子,
+    移動先カードID,
+    方向: 'toCard',
+    数: 種類 === 'soul' ? 1 : coreMoveAmount,
+  });
+  applyState(state);
+}
+
+el('coreMoveToOtherCard').addEventListener('click', () => 移し先を選び始める('normal'));
+el('coreMoveSoulToOtherCard').addEventListener('click', () => 移し先を選び始める('soul'));
+
+// リタイア（投了）。押し間違いで試合が終わらないよう1回確認する。
+el('retireBtn').addEventListener('click', async () => {
+  if (!confirm('リタイアしますか？　この試合は終了します。')) return;
+  const state = await api('POST', '/api/action/retire', { as: viewer });
+  applyState(state);
+});
+
 // === カード効果情報 ===
 
 function showCardEffect(card) {
@@ -667,6 +995,12 @@ el('effectSkip').addEventListener('click', () => submitEffectSelection([]));
 el('flashPass').addEventListener('click', async () => {
   const state = await api('POST', '/api/action/flash-pass', { as: viewer });
   applyState(state);
+});
+
+// メインステップの【起動】効果を見送る。
+// 撃たない選択肢が画面に無いと、パネルが出たまま他の操作の邪魔になる。
+el('activateSkip').addEventListener('click', () => {
+  el('activatePanel').hidden = true;
 });
 
 el('cardEffectClose').addEventListener('click', () => {
