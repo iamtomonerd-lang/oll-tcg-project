@@ -297,7 +297,14 @@ function renderZoneRow(prefix, playerState) {
   el(`${prefix}Life`).textContent = `Life ${playerState.ライフ}`;
   el(`${prefix}Pips`).innerHTML = pipsHTML(playerState.リザーブ);
   el(`${prefix}Deck`).textContent = `デッキ ${playerState.デッキ枚数}`;
-  el(`${prefix}Trash`).textContent = `トラッシュ ${playerState.トラッシュ.length}`;
+  // トラッシュはカードだけでなくコアも溜まる。
+  // 「自分のトラッシュのコアを置く」効果の撃ちどきが分かるよう、コア数も出す。
+  const トラッシュのコア = playerState.トラッシュのコア ?? { 通常: 0, ソウルコア: false };
+  const コアの内訳 =
+    トラッシュのコア.通常 + (トラッシュのコア.ソウルコア ? 1 : 0) > 0
+      ? ` ／ コア${トラッシュのコア.通常}${トラッシュのコア.ソウルコア ? '+ソウル' : ''}`
+      : '';
+  el(`${prefix}Trash`).textContent = `トラッシュ ${playerState.トラッシュ.length}${コアの内訳}`;
 }
 
 function renderField(containerId, cards, classify) {
@@ -493,11 +500,18 @@ function renderBoard(state) {
     foeHand.appendChild(cardEl);
   }
 
+  // 割り込みの窓が自分に回っているあいだは、［フラッシュ］のマジックを押せる。
+  // ここを見ずにメインステップ中だけ押せるようにしていたため、
+  // ブレイククロー／オフェリングドロー／フレイムハリケーンの
+  // ［フラッシュ］が一度も使えなかった。
+  const 割り込みで使える = !!state.保留中のフラッシュ && !state.保留中の効果;
+
   const selfHand = el('selfHand');
   selfHand.innerHTML = '';
   for (const card of state.自分.手札 || []) {
-    const playable = メインステップ中 && card.支払可能;
-    const cardEl = handCardEl(card, card.支払可能);
+    const playable =
+      card.支払可能 && (メインステップ中 || (割り込みで使える && card.フラッシュで使えるか));
+    const cardEl = handCardEl(card, playable);
     if (playable) {
       cardEl.addEventListener('click', () => doPlayCard(card));
     }
