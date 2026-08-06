@@ -1191,6 +1191,46 @@ body.deck-building #layoutEditBtn {
   background: rgba(0, 0, 0, 0.55);
 }
 
+/* 絵柄つきの選択ボタン。
+   元は横長のボタン全面に絵柄を敷いていた。cover なので縦横の比そのものは
+   保たれるが、縦長のカード絵から横長の帯だけを抜き出すことになり、
+   何のカードか分からず、絵の比率がおかしく見えていた。
+   デッキ構築の一覧と同じく、カードの形のまま縮めて先頭に置く。 */
+.effect-target-btn.has-thumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 8px 12px;
+}
+
+.effect-target-btn.has-thumb .effect-target-label {
+  background: none;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.target-thumb {
+  flex: none;
+  width: 40px;
+  /* 実物のカードと同じ縦横比（63mm × 88mm）で置く */
+  aspect-ratio: 63 / 88;
+  border-radius: 4px;
+  background-size: cover;
+  /* カード絵は上のほうに顔が来るので、上寄せで切る */
+  background-position: center 22%;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.target-thumb-none {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
 /* === 支払い画面 === */
 /*
    ふだんは出さない。リザーブだけで払えない／《継召》／《ソウルマジック》の

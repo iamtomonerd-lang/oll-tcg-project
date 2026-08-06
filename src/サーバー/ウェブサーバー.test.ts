@@ -1,5 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Server } from 'node:http';
 
 import { app } from './ウェブサーバー.js';
@@ -452,7 +455,7 @@ test('APIを通した自動対戦', async t => {
   });
 
   await t.test('どのデッキでも成立する', async () => {
-    for (const デッキ of ['gungata', 'rowamique', 'genbo', 'mushaako', 'harria', 'cupel', 'greifer', 'seltarius', 'leufalus', 'fuugagan', 'ganiki', 'breakclaw', 'offering', 'flame', 'rensis', 'akurai', 'effect', 'purple']) {
+    for (const デッキ of ['gungata', 'rowamique', 'genbo', 'mushaako', 'harria', 'cupel', 'greifer', 'seltarius', 'leufalus', 'fuugagan', 'ganiki', 'breakclaw', 'offering', 'flame', 'rensis', 'akurai', 'effect', 'purple', 'mixed']) {
       const 結果 = await 自動で対戦する('vsAI', デッキ, 2024);
       assert.equal(結果.決着した, true, `デッキ=${デッキ} で決着しなかった`);
     }
@@ -510,6 +513,59 @@ test('APIを通した自動対戦', async t => {
   await サーバーを止める();
 });
 
+// === 選んだデッキで始まるか ===
+//
+// 型の宣言と入口の許可リストを別々に手で書いていたため、
+// 名簿に足しても許可リストに書き忘れると、知らない名前として黙って
+// グン＝ガタに差し替わっていた。実際にロワミークがこれで漏れていて、
+// ロワミークを選んでもグン＝ガタの試合が始まっていた。
+//
+// 画面が押せるデッキのボタンを起点に、そのデッキらしい中身で始まるかを見る。
+test('画面のデッキボタンは、すべてそのデッキで試合が始まる', async () => {
+  await サーバーを起動する();
+  try {
+    const HTML = readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '../../public/index.html'),
+      'utf-8'
+    );
+    const ボタン一覧 = [...HTML.matchAll(/data-deck="([^"]+)"/g)].map(m => m[1]);
+    assert.ok(ボタン一覧.length > 0, 'デッキのボタンが1つも見つからない（抽出が壊れている）');
+
+    // グン＝ガタだけのデッキと見分けるため、それ以外のデッキは
+    // 「グン＝ガタ以外のカードが1枚は入っている」ことを見る。
+    const 中身を見る = async (デッキ: string) => {
+      const 応答 = await 叩く('POST', '/api/game/start', { mode: 'vsAI', deck: デッキ, seed: 5 });
+      assert.equal(応答.ok, true, `${デッキ}: 開始が拒否された（${応答.error}）`);
+      const 名前 = new Set<string>(
+        (応答.state.自分.手札 ?? []).map((c: any) => c.名前 as string)
+      );
+      return 名前;
+    };
+
+    const グンガタの中身 = await 中身を見る('gungata');
+    assert.deepEqual([...グンガタの中身], ['グン＝ガタ'], '前提：gungata はグン＝ガタだけのはず');
+
+    for (const デッキ of ボタン一覧) {
+      const 名前 = await 中身を見る(デッキ);
+      if (デッキ === 'gungata') continue;
+      assert.ok(
+        [...名前].some(n => n !== 'グン＝ガタ'),
+        `${デッキ}: グン＝ガタしか出てこない（許可リストから漏れて差し替わっている可能性）`
+      );
+    }
+
+    // 名簿に無い名前は、黙って別のデッキに差し替えず断る
+    const 知らないデッキ = await 叩く('POST', '/api/game/start', {
+      mode: 'vsAI',
+      deck: 'ありもしないデッキ',
+    });
+    assert.equal(知らないデッキ.ok, false);
+    assert.match(知らないデッキ.error, /知らないデッキ/);
+  } finally {
+    await サーバーを止める();
+  }
+});
+
 // === 不正な入力を弾くか ===
 
 test('APIは不正な操作を拒否する', async t => {
@@ -564,6 +620,40 @@ test('APIは不正な操作を拒否する', async t => {
       支払い: { コスト: [{ 場所: 'カード', カードID: 'ありもしない', 通常: 1 }] },
     });
     assert.equal(結果.ok, false);
+  });
+
+  // 「0個をここから払う」と「どこから払うか決めていない」は別物。
+  // 空配列を「指定あり」と読んでいたため、支払い元0件で組み立ててしまい、
+  // 《ソウルマジック》がソウルコアを1個も出せずに失敗していた（実機で発動しなかった）。
+  await t.test('空の支払い指定は「指定なし」として扱い、これまで通り自動で払う', async () => {
+    await 叩く('POST', '/api/game/start', { mode: 'vsAI', deck: 'gungata', seed: 5 });
+
+    // 開始直後のリザーブでは何も出せない。自分の手番で出せる手札が現れるまでステップを送る。
+    let 状態: any = null;
+    let 出せる手札: any = undefined;
+    for (let 安全 = 0; 安全 < 40 && !出せる手札; 安全++) {
+      状態 = (await 叩く('GET', '/api/game/state?as=p1')).state;
+      if (状態.試合終了か) break;
+      // ネクサスは /api/action/place、マジックは /api/action/use なので、
+      // 召喚で試すならスピリットに限る
+      出せる手札 = 状態.自分が実行者か
+        ? 状態.自分.手札.find((c: any) => c.支払可能 && c.種別 === 'スピリット')
+        : undefined;
+      if (!出せる手札) await 叩く('POST', '/api/action/end-step', { as: 'p1' });
+    }
+    assert.ok(出せる手札, 'リザーブだけで出せる手札が1枚も現れなかった（前提が崩れている）');
+
+    const 結果 = await 叩く('POST', '/api/action/summon', {
+      as: 'p1',
+      cardId: 出せる手札.識別子,
+      支払い: { コスト: [], 初期コア: [], 継召除外: [] },
+    });
+
+    assert.equal(結果.ok, true, `空配列で拒否された: ${結果.error}`);
+    assert.ok(
+      結果.state.自分.フィールド.some((c: any) => c.識別子 === 出せる手札.識別子),
+      '場に出ている'
+    );
   });
 
   await t.test('トラッシュに無いカードを《継召》で食べようとしたら拒否する', async () => {
@@ -672,6 +762,113 @@ test('コアはカードからカードへ直に移せる', async () => {
     if (後の元) {
       assert.equal(後の元.コア数, 元の前 - 1, '元のコアが1個減る');
     }
+  } finally {
+    await サーバーを止める();
+  }
+});
+
+// === ソウルコアと通常コアの入れ替え ===
+//
+// コア管理.ソウルコアと通常コアを交換 は前からあったのに、呼び出す者が誰もいなかった。
+// そのため実機では「ソウルコアを外す」→「通常コアを乗せる」の2手に分けるしかなく、
+// 途中でLv1のコストを割ったスピリットが消滅してしまうため、
+// 別々のスピリットの上でコアを入れ替えることが事実上できなかった。
+test('ソウルコアと通常コアは1回の操作で入れ替わる', async () => {
+  await サーバーを起動する();
+  try {
+    let 状態 = (await 叩く('POST', '/api/game/start', { mode: 'vsHuman', deck: 'gungata', seed: 4 }))
+      .state;
+    for (let 手 = 0; 手 < 300 && 状態.自分.フィールド.length < 2; 手++) {
+      if (状態.試合終了か) break;
+      const 視点 = 状態.自分.識別子;
+      let 応答;
+      if (状態.保留中のブロック) {
+        応答 = await 叩く('POST', '/api/action/block', { as: 視点, cardId: null });
+      } else if (状態.保留中のフラッシュ) {
+        応答 = await 叩く('POST', '/api/action/flash-pass', { as: 視点 });
+      } else if (状態.保留中の効果) {
+        応答 = await 叩く('POST', '/api/action/select-effect-target', {
+          as: 状態.保留中の効果.答える人 ?? 視点,
+          targetCardIds: (状態.保留中の効果.対象候補一覧 ?? [])
+            .slice(0, 状態.保留中の効果.最小)
+            .map((c: any) => c.識別子),
+        });
+      } else {
+        const 出せる = (状態.自分.手札 ?? []).find((c: any) => c.支払可能 && c.種別 === 'スピリット');
+        応答 = 出せる
+          ? await 叩く('POST', '/api/action/summon', { as: 視点, cardId: 出せる.識別子 })
+          : await 叩く('POST', '/api/action/end-step', { as: 視点 });
+      }
+      if (!応答?.ok) break;
+      状態 = 応答.state;
+      if (!状態.試合終了か && !状態.自分が実行者か) {
+        状態 = (await 叩く('GET', `/api/game/state?as=${状態.実行者識別子}`)).state;
+      }
+    }
+
+    assert.ok(状態.自分.フィールド.length >= 2, '前提：自分の場に2体そろえられなかった');
+    const 視点 = 状態.自分.識別子;
+
+    // ソウルコアはコストとして払われてトラッシュにいることがある。
+    // リフレッシュステップでリザーブへ戻るので、戻るまでステップを送る。
+    for (let 手 = 0; 手 < 40 && !状態.自分.リザーブ.ソウルコア; 手++) {
+      if (状態.試合終了か) break;
+      if (状態.自分.フィールド.some((c: any) => c.ソウルコア)) break;
+      const 応答 = 状態.保留中のブロック
+        ? await 叩く('POST', '/api/action/block', { as: 状態.自分.識別子, cardId: null })
+        : 状態.保留中のフラッシュ
+          ? await 叩く('POST', '/api/action/flash-pass', { as: 状態.自分.識別子 })
+          : await 叩く('POST', '/api/action/end-step', { as: 状態.自分.識別子 });
+      if (!応答?.ok) break;
+      状態 = 応答.state;
+      if (!状態.試合終了か && !状態.自分が実行者か) {
+        状態 = (await 叩く('GET', `/api/game/state?as=${状態.実行者識別子}`)).state;
+      }
+    }
+    assert.ok(状態.自分.フィールド.length >= 2, '前提：場の2体が途中で減った');
+
+    // 片方にソウルコアを乗せる（ここが入れ替えの「ソウル側」になる）。
+    // 既に場のカードが持っているなら、そのカードをソウル側として使う。
+    const 既に持っている = 状態.自分.フィールド.find((c: any) => c.ソウルコア);
+    let ソウル側 = 既に持っている ?? 状態.自分.フィールド[0];
+    let 乗せた: any = { ok: true, state: 状態 };
+    if (!既に持っている) {
+      assert.ok(状態.自分.リザーブ.ソウルコア, '前提：ソウルコアがリザーブに戻ってこなかった');
+      乗せた = await 叩く('POST', '/api/action/place-soul-core', {
+        as: 視点,
+        cardId: ソウル側.識別子,
+      });
+      assert.equal(乗せた.ok, true, 乗せた.error);
+    }
+
+    const 通常コア数 = (c: any) => c.コア数 - (c.ソウルコア ? 1 : 0);
+    const 場を引く = (s: any, id: string) => s.自分.フィールド.find((c: any) => c.識別子 === id);
+    const 通常側 = 乗せた.state.自分.フィールド.find(
+      (c: any) => c.識別子 !== ソウル側.識別子 && 通常コア数(c) >= 1
+    );
+    assert.ok(通常側, '前提：通常コアを持つ相手が場に無い');
+
+    const ソウル側の前 = 場を引く(乗せた.state, ソウル側.識別子).コア数;
+    const 通常側の前 = 通常側.コア数;
+
+    const 結果 = await 叩く('POST', '/api/action/swap-core', {
+      as: 視点,
+      ソウル側カードID: ソウル側.識別子,
+      通常側カードID: 通常側.識別子,
+    });
+
+    assert.equal(結果.ok, true, 結果.error);
+    const 後のソウル側 = 場を引く(結果.state, ソウル側.識別子);
+    const 後の通常側 = 場を引く(結果.state, 通常側.識別子);
+
+    // 入れ替えなので、どちらも場に残り、総数は変わらず、ソウルコアの位置だけ入れ替わる。
+    // 2手に分けていたころは、ここでソウル側が消滅して場から消えていた。
+    assert.ok(後のソウル側, 'ソウル側が場に残っている（途中で消滅しない）');
+    assert.ok(後の通常側, '通常側が場に残っている');
+    assert.equal(後のソウル側.コア数, ソウル側の前, 'ソウル側の総数は変わらない');
+    assert.equal(後の通常側.コア数, 通常側の前, '通常側の総数は変わらない');
+    assert.equal(後のソウル側.ソウルコア, false, 'ソウルコアは出て行った');
+    assert.equal(後の通常側.ソウルコア, true, 'ソウルコアは相手側へ移った');
   } finally {
     await サーバーを止める();
   }
