@@ -74,6 +74,18 @@ function 不変条件を検査する(状態: any, 手順: string): void {
     );
   }
 
+  // ブロック後の割り込みの窓は、ブロックした場合にだけ発生する（8-1-4）。
+  //
+  // ブロックしなくても窓を開けていたため、
+  // 「ブロックしていないのにブロック後のフラッシュタイミングがある」状態になっていた。
+  // ブロッカーがいない「ブロック後」の窓は、そもそも起きてはいけない場面。
+  if (状態.保留中のフラッシュ) {
+    assert.ok(
+      状態.保留中のフラッシュ.段階 !== 'ブロック後' || 状態.保留中のフラッシュ.ブロッカー名,
+      `${場所} ブロックしていないのに「ブロック後」の割り込みの窓が開いている`
+    );
+  }
+
   // 【起動】効果は、そのタイミングの場面でしか勧めない。
   //
   // ここを見ずに全部の起動効果を出していたため、
@@ -440,7 +452,7 @@ test('APIを通した自動対戦', async t => {
   });
 
   await t.test('どのデッキでも成立する', async () => {
-    for (const デッキ of ['gungata', 'genbo', 'mushaako', 'harria', 'cupel', 'greifer', 'seltarius', 'leufalus', 'fuugagan', 'ganiki', 'breakclaw', 'offering', 'flame', 'rensis', 'akurai', 'effect', 'purple']) {
+    for (const デッキ of ['gungata', 'rowamique', 'genbo', 'mushaako', 'harria', 'cupel', 'greifer', 'seltarius', 'leufalus', 'fuugagan', 'ganiki', 'breakclaw', 'offering', 'flame', 'rensis', 'akurai', 'effect', 'purple']) {
       const 結果 = await 自動で対戦する('vsAI', デッキ, 2024);
       assert.equal(結果.決着した, true, `デッキ=${デッキ} で決着しなかった`);
     }
@@ -527,7 +539,142 @@ test('APIは不正な操作を拒否する', async t => {
     assert.equal(結果.ok, false);
   });
 
+  // 支払いの内訳は、コアを1個も動かす前に確かめる。
+  // 通してしまうと、失敗したのにトラッシュのカードだけ《継召》で消える、といった
+  // 中途半端な状態になる。
+  await t.test('コストにちょうどの数を指定しなければ拒否する', async () => {
+    const 状態 = (await 叩く('POST', '/api/game/start', { mode: 'vsAI', deck: 'gungata', seed: 5 }))
+      .state;
+    const 手札 = 状態.自分.手札[0];
+    const 結果 = await 叩く('POST', '/api/action/summon', {
+      as: 'p1',
+      cardId: 手札.識別子,
+      支払い: { コスト: [{ 場所: 'リザーブ', 通常: 99 }], 初期コア: [{ 場所: 'リザーブ', 通常: 1 }] },
+    });
+    assert.equal(結果.ok, false);
+    assert.match(結果.error, /ちょうど|そのコアがありません/);
+  });
+
+  await t.test('自分の場に無いカードを支払い元に指定したら拒否する', async () => {
+    const 状態 = (await 叩く('POST', '/api/game/start', { mode: 'vsAI', deck: 'gungata', seed: 5 }))
+      .state;
+    const 結果 = await 叩く('POST', '/api/action/summon', {
+      as: 'p1',
+      cardId: 状態.自分.手札[0].識別子,
+      支払い: { コスト: [{ 場所: 'カード', カードID: 'ありもしない', 通常: 1 }] },
+    });
+    assert.equal(結果.ok, false);
+  });
+
+  await t.test('トラッシュに無いカードを《継召》で食べようとしたら拒否する', async () => {
+    const 状態 = (await 叩く('POST', '/api/game/start', { mode: 'vsAI', deck: 'gungata', seed: 5 }))
+      .state;
+    const 結果 = await 叩く('POST', '/api/action/summon', {
+      as: 'p1',
+      cardId: 状態.自分.手札[0].識別子,
+      支払い: { 継召除外: ['ありもしない'] },
+    });
+    assert.equal(結果.ok, false);
+  });
+
   await サーバーを止める();
+});
+
+// === リタイア ===
+//
+// 手元で試すときに「この試合はもういい」と切り上げる手段。
+// ルール上の勝利条件ではないので、勝敗結果に理由を残す。
+test('リタイアすると試合が終わり、相手の勝ちになる', async () => {
+  await サーバーを起動する();
+  try {
+    await 叩く('POST', '/api/game/start', { mode: 'vsAI', deck: 'gungata', seed: 9 });
+    const 結果 = await 叩く('POST', '/api/action/retire', { as: 'p1' });
+
+    assert.equal(結果.ok, true);
+    assert.equal(結果.state.試合終了か, true);
+    assert.equal(結果.state.勝敗結果.勝者.識別子, 'p2');
+    assert.equal(結果.state.勝敗結果.敗者.識別子, 'p1');
+    assert.match(結果.state.勝敗結果.理由, /リタイア/);
+
+    // 終わったあとは行動できない
+    const あとから = await 叩く('POST', '/api/action/end-step', { as: 'p1' });
+    assert.equal(あとから.ok, false);
+  } finally {
+    await サーバーを止める();
+  }
+});
+
+// === カードからカードへコアを移す ===
+//
+// 元はカード↔リザーブしか無く、別々のスピリットの上のコアを入れ替えるには
+// いったんリザーブへ戻すしかなかった。
+test('コアはカードからカードへ直に移せる', async () => {
+  await サーバーを起動する();
+  // アサーションが落ちてもサーバーを必ず閉じる。
+  // 閉じ忘れると node:test がプロセスを終われず、テスト全体が固まって見える。
+  try {
+    // 自分の場にスピリットが2体そろうまで、ふつうに召喚して進める
+    let 状態 = (
+      await 叩く('POST', '/api/game/start', { mode: 'vsHuman', deck: 'gungata', seed: 4 })
+    ).state;
+    for (let 手 = 0; 手 < 300 && 状態.自分.フィールド.length < 2; 手++) {
+      if (状態.試合終了か) break;
+      const 視点 = 状態.自分.識別子;
+      let 応答;
+      if (状態.保留中のブロック) {
+        応答 = await 叩く('POST', '/api/action/block', { as: 視点, cardId: null });
+      } else if (状態.保留中のフラッシュ) {
+        応答 = await 叩く('POST', '/api/action/flash-pass', { as: 視点 });
+      } else if (状態.保留中の効果) {
+        応答 = await 叩く('POST', '/api/action/select-effect-target', {
+          as: 状態.保留中の効果.答える人 ?? 視点,
+          targetCardIds: (状態.保留中の効果.対象候補一覧 ?? [])
+            .slice(0, 状態.保留中の効果.最小)
+            .map((c: any) => c.識別子),
+        });
+      } else {
+        const 出せる = (状態.自分.手札 ?? []).find(
+          (c: any) => c.支払可能 && c.種別 === 'スピリット'
+        );
+        応答 = 出せる
+          ? await 叩く('POST', '/api/action/summon', { as: 視点, cardId: 出せる.識別子 })
+          : await 叩く('POST', '/api/action/end-step', { as: 視点 });
+      }
+      if (!応答?.ok) break;
+      状態 = 応答.state;
+      if (!状態.試合終了か && !状態.自分が実行者か) {
+        状態 = (await 叩く('GET', `/api/game/state?as=${状態.実行者識別子}`)).state;
+      }
+    }
+
+    assert.ok(状態.自分.フィールド.length >= 2, '前提：自分の場に2体そろえられなかった');
+
+    // 出せるのは通常コアだけなので、通常コアを持っているカードを元にする
+    const 通常コア数 = (c: any) => c.コア数 - (c.ソウルコア ? 1 : 0);
+    const 元 = 状態.自分.フィールド.find((c: any) => 通常コア数(c) >= 1);
+    assert.ok(元, '前提：通常コアを持つカードが場に無い');
+    const 先 = 状態.自分.フィールド.find((c: any) => c.識別子 !== 元.識別子);
+    const 元の前 = 元.コア数;
+    const 先の前 = 先.コア数;
+
+    const 結果 = await 叩く('POST', '/api/action/move-core', {
+      as: 状態.自分.識別子,
+      cardId: 元.識別子,
+      移動先カードID: 先.識別子,
+      数: 1,
+    });
+
+    assert.equal(結果.ok, true, 結果.error);
+    const 後の元 = 結果.state.自分.フィールド.find((c: any) => c.識別子 === 元.識別子);
+    const 後の先 = 結果.state.自分.フィールド.find((c: any) => c.識別子 === 先.識別子);
+    // 元がコア不足で消滅していたら場から消える。その場合も「移った」ことは先で確かめられる。
+    assert.equal(後の先.コア数, 先の前 + 1, '移し先のコアが1個増える');
+    if (後の元) {
+      assert.equal(後の元.コア数, 元の前 - 1, '元のコアが1個減る');
+    }
+  } finally {
+    await サーバーを止める();
+  }
 });
 
 // 判断は「聞かれている人」だけが答えられる。

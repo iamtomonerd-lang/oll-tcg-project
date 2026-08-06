@@ -31,6 +31,10 @@
           <span class="mode-btn-title">グン＝ガタ</span>
           <span class="mode-btn-desc">赤色のスピリット（BP5000→8000）</span>
         </button>
+        <button class="mode-btn deck-btn" data-deck="rowamique">
+          <span class="mode-btn-title">ロワミーク</span>
+          <span class="mode-btn-desc">召喚時にBP3000以下の相手を選ぶ</span>
+        </button>
         <button class="mode-btn deck-btn" data-deck="genbo">
           <span class="mode-btn-title">ゲン＝ボー</span>
           <span class="mode-btn-desc">赤色のスピリット（BP3000→5000）</span>
@@ -159,6 +163,7 @@
     <div class="turn-banner" id="turnBanner" data-layout-id="ターン表示">
       <span id="turnLabel">―</span>
       <button id="endStepBtn" class="btn-ghost" hidden>ステップを終了</button>
+      <button id="retireBtn" class="btn-ghost" type="button">リタイア</button>
     </div>
 
     <!-- 自分エリア -->
@@ -194,7 +199,45 @@
       <button id="coreMoveSoulBtn" class="btn-outline" type="button" hidden>ソウルコアをリザーブへ</button>
       <button id="coreMoveFromReserveSoulBtn" class="btn-solid" type="button" hidden>リザーブからソウルコアを乗せる</button>
     </div>
+    <!-- 別のカードへ直に移す。いったんリザーブへ戻す必要が無くなる -->
+    <p class="popover-hint" id="coreMoveToCardHint" hidden>移す先のカードを押してください</p>
+    <div class="popover-actions">
+      <button id="coreMoveToOtherCard" class="btn-outline" type="button">別のカードへ移す</button>
+      <button id="coreMoveSoulToOtherCard" class="btn-outline" type="button" hidden>ソウルコアを別のカードへ</button>
+    </div>
     <button id="coreMoveClose" class="popover-close" type="button">閉じる</button>
+  </div>
+
+  <!-- 支払い方を決める。ふだんは出さず、必要なときだけ開く。
+       ・リザーブだけでは払えない（カードの上のコアが要る）
+       ・《継召》でトラッシュのEXシンボルを食べられる
+       ・《ソウルマジック》でソウルコアだけ払える
+       ・設定で「毎回選ぶ」にしている -->
+  <div id="payPanel" class="popover popover-pay" hidden>
+    <p class="popover-title" id="payTitle">支払い</p>
+    <p class="popover-hint" id="payHint"></p>
+    <div id="paySoulMagic" class="pay-section" hidden>
+      <label class="pay-check">
+        <input type="checkbox" id="paySoulMagicCheck" />
+        <span>《ソウルマジック》でソウルコアだけ払う</span>
+      </label>
+    </div>
+    <div id="payKeishou" class="pay-section" hidden>
+      <p class="pay-section-title">《継召》で食べるカード</p>
+      <div id="payKeishouList" class="effect-target-list"></div>
+    </div>
+    <div id="payCost" class="pay-section">
+      <p class="pay-section-title" id="payCostTitle">コストに使うコア</p>
+      <div id="payCostList" class="pay-source-list"></div>
+    </div>
+    <div id="payInitial" class="pay-section">
+      <p class="pay-section-title" id="payInitialTitle">カードに置くコア</p>
+      <div id="payInitialList" class="pay-source-list"></div>
+    </div>
+    <div class="popover-actions">
+      <button id="payConfirm" class="btn-solid" type="button">これで出す</button>
+      <button id="payCancel" class="btn-outline" type="button">やめる</button>
+    </div>
   </div>
 
   <!-- トラッシュ一覧 -->
@@ -226,18 +269,23 @@
     <button id="blockSkip" class="btn-outline" type="button">ブロックしない</button>
   </div>
 
-  <!-- 割り込み（フラッシュ）の判断 -->
+  <!-- 割り込み（フラッシュ）の判断。
+       窓が開いている間の【起動】効果は、別のパネルにせずここへ並べる。
+       2枚を重ねて出していたため、起動効果のパネルが「何もしない」を覆い、
+       効果を撃たずに見送ることができなくなっていた。 -->
   <div id="flashPanel" class="popover popover-flash" hidden>
     <p class="popover-title">割り込みますか？</p>
     <p class="popover-hint" id="flashHint"></p>
+    <div id="flashActivateList" class="effect-target-list"></div>
     <button id="flashPass" class="btn-outline" type="button">何もしない</button>
   </div>
 
-  <!-- 起動効果の発動 -->
+  <!-- 起動効果の発動（メインステップ用） -->
   <div id="activatePanel" class="popover popover-activate" hidden>
     <p class="popover-title">使える効果</p>
     <p class="popover-hint">撃ちたい効果を選んでください（撃たなくてもかまいません）</p>
     <div id="activateList" class="effect-target-list"></div>
+    <button id="activateSkip" class="btn-outline" type="button">使わない</button>
   </div>
 
   <!-- 効果の対象選択 -->
