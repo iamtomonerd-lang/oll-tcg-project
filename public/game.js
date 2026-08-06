@@ -68,6 +68,47 @@ async function api(method, url, body) {
   return data.state;
 }
 
+// === パネルは常に1枚だけ出す ===
+//
+// popover はどれも画面のまん中に position:fixed で置かれ、z-index も同じ。
+// 2枚出れば文字がそのまま重なり、下になったほうのボタンは押せない。
+// フラッシュの窓が開いているときにフレイムハリケーンを押すと、
+// 支払い画面が割り込みの窓とぴったり重なって手が進められなくなっていた。
+//
+// パネルには2種類ある。
+//   盤面のパネル … 状態から出るもの（割り込み・ブロック・効果の対象選択・起動効果）
+//   人のパネル   … 人が押して開くもの（支払い・コア移動・トラッシュ・カードの説明）
+// 人のパネルは同時に1枚だけ。開いているあいだは盤面のパネルを引っ込め、
+// 閉じたら盤面のパネルが戻る（状態は消えていないので描き直すだけでよい）。
+const 人のパネル一覧 = [
+  'payPanel',
+  'coreMovePanel',
+  'trashPanel',
+  'cardEffectPanel',
+  'cardDetailPanel',
+];
+let 人が開いているパネル = null;
+
+function パネルを開く(識別子) {
+  for (const 他 of 人のパネル一覧) {
+    if (他 !== 識別子) el(他).hidden = true;
+  }
+  人が開いているパネル = 識別子;
+  el(識別子).hidden = false;
+  if (lastState) renderBoard(lastState); // 盤面のパネルを引っ込める
+}
+
+function パネルを閉じる(識別子) {
+  el(識別子).hidden = true;
+  if (人が開いているパネル === 識別子) 人が開いているパネル = null;
+  if (lastState) renderBoard(lastState); // 盤面のパネルを戻す
+}
+
+function 人のパネルを全部閉じる() {
+  for (const 識別子 of 人のパネル一覧) el(識別子).hidden = true;
+  人が開いているパネル = null;
+}
+
 function applyState(state) {
   if (!state) return;
   lastState = state;
@@ -77,8 +118,7 @@ function applyState(state) {
     showOnly(resultScreen);
     // パネルを非表示にする
     el('blockPanel').hidden = true;
-    el('coreMovePanel').hidden = true;
-    el('trashPanel').hidden = true;
+    人のパネルを全部閉じる();
     return;
   }
 
@@ -126,6 +166,9 @@ for (const btn of document.querySelectorAll('.deck-btn')) {
       'flame': 'フレイムハリケーン',
       'rensis': '飛赫レンシス',
       'akurai': '飛剛アクライ',
+      'mixed': '風牙＋風牙以外（混成）',
+      'effect': '効果ぜんぶ入り',
+      'purple': '紫／血醒',
     };
     const deckName = deckNames[btn.dataset.deck] || 'デッキ';
     el('modeEyebrow').textContent = `${deckName}で対戦`;
@@ -229,6 +272,21 @@ function applyArt(div, cardNumber) {
   artLayer.className = 'card-art';
   artLayer.style.backgroundImage = `url('${art}')`;
   div.appendChild(artLayer);
+}
+
+// 選ぶボタンの先頭に、カードの形をした小さな絵を置く。
+//
+// 元は横長のボタン全面に絵柄を敷いていた。cover で切り取るので縦横の比は
+// 保たれるが、縦長のカード絵から横長の帯だけを抜くことになり、
+// 何のカードか分からないうえ絵の比率がおかしく見えていた。
+// デッキ構築の一覧と同じく、カードの形のまま縮めて置く。
+function 絵柄の縮小を付ける(親, cardNumber) {
+  const art = artURL(cardNumber);
+  const 縮小 = document.createElement('span');
+  縮小.className = art ? 'target-thumb' : 'target-thumb target-thumb-none';
+  if (art) 縮小.style.backgroundImage = `url('${art}')`;
+  else 縮小.textContent = '？';
+  親.appendChild(縮小);
 }
 
 function fieldCardEl(card, mode) {
@@ -380,11 +438,14 @@ function renderBoard(state) {
   renderZoneRow('foe', state.相手);
   renderZoneRow('self', state.自分);
 
+  // 人のパネルが開いているあいだ、盤面のパネルは引っ込む（重ねない）
+  const 盤面のパネルを隠す = 人が開いているパネル !== null;
+
   // バトル中の割り込みの窓。効果を撃つか、何もしないかを選ぶ。
   const flash = state.保留中のフラッシュ;
   const flashPanel = el('flashPanel');
   if (flash) {
-    flashPanel.hidden = false;
+    flashPanel.hidden = 盤面のパネルを隠す;
     const 場面 = flash.段階 === 'ブロック後' ? 'ブロックが宣言されました' : 'アタックが宣言されました';
     const 相手 = flash.ブロッカー名
       ? `${flash.攻撃者名} が ${flash.ブロッカー名} にブロックされています`
@@ -420,7 +481,7 @@ function renderBoard(state) {
     activatePanel.hidden = true;
   } else {
     el('flashActivateList').innerHTML = '';
-    activatePanel.hidden = activatable.length === 0;
+    activatePanel.hidden = activatable.length === 0 || 盤面のパネルを隠す;
     効果ボタンを並べる(el('activateList'));
   }
 
@@ -430,7 +491,7 @@ function renderBoard(state) {
   if (pending && pending.選択肢) {
     // カードを選ぶのではない判断（「置くコアは相手が選ぶ」など）。
     // 相手の効果に答える場面なので、誰の効果なのかも見せる。
-    effectPanel.hidden = false;
+    effectPanel.hidden = 盤面のパネルを隠す;
     el('effectTitle').textContent = `${pending.トリガー元カード名} の効果`;
     el('effectHint').textContent = pending.問い || 'どちらかを選んでください';
 
@@ -448,7 +509,7 @@ function renderBoard(state) {
     el('effectConfirm').hidden = true;
     el('effectSkip').hidden = true;
   } else if (pending) {
-    effectPanel.hidden = false;
+    effectPanel.hidden = 盤面のパネルを隠す;
 
     const 何体 = pending.最小 === pending.最大
       ? `${pending.最大}体`
@@ -467,10 +528,10 @@ function renderBoard(state) {
     for (const 対象 of pending.対象候補一覧) {
       const btn = document.createElement('button');
       const 順番 = effectSelection.indexOf(対象.識別子);
-      btn.className = 順番 >= 0 ? 'effect-target-btn selected' : 'effect-target-btn';
+      btn.className = 順番 >= 0 ? 'effect-target-btn has-thumb selected' : 'effect-target-btn has-thumb';
       // デッキの上をめくって選ぶ効果は、名前だけだと何を拾うのか分かりにくい。
-      // トラッシュ一覧と同じやり方で絵柄を背景に敷く。
-      applyArt(btn, 対象.カードナンバー);
+      // カードの形のまま縮めた絵を先頭に置く。
+      絵柄の縮小を付ける(btn, 対象.カードナンバー);
       const 番号 = pending.順番を決める && 順番 >= 0 ? `${順番 + 1}. ` : '';
       const ラベル = document.createElement('span');
       ラベル.className = 'effect-target-label';
@@ -507,9 +568,14 @@ function renderBoard(state) {
     自分のターンで随意ステップ && (state.ステップ === 'メインステップ' || state.ステップ === '第2メインステップ');
 
   renderField('selfField', state.自分.フィールド, card => {
-    // コアの移し先を選んでいる最中は、移し先だけを押せるようにする
+    // コアの移し先を選んでいる最中は、移し先だけを押せるようにする。
+    // 入れ替えの相手は「通常コアを持っているカード」だけ（無い相手は出す物が無い）。
     if (コアの移し先を選んでいる && activeCoreCard) {
-      return card.識別子 === activeCoreCard.識別子 ? null : 'core-destination';
+      if (card.識別子 === activeCoreCard.識別子) return null;
+      if (コアの移し先を選んでいる === 'swap' && card.コア数 - (card.ソウルコア ? 1 : 0) < 1) {
+        return null;
+      }
+      return 'core-destination';
     }
     if (pending && pending.対象候補一覧.some(c => c.識別子 === card.識別子)) {
       return effectSelection.includes(card.識別子) ? 'effect-selected' : 'effect-target';
@@ -536,9 +602,16 @@ function renderBoard(state) {
   const selfHand = el('selfHand');
   selfHand.innerHTML = '';
   for (const card of state.自分.手札 || []) {
+    // 《ソウルマジック》はコストを丸ごと飛ばしてソウルコア1個で済ませるので、
+    // コアが足りているかとは別に押せなければならない。
+    // ここを見ていなかったため、リザーブが空のときフレイムハリケーンが
+    // 押せず、支払い画面まで辿り着けなかった（＝一度も撃てなかった）。
+    // ［フラッシュ］しか持たないマジック（フレイムハリケーン）はメインステップでは撃てない。
+    // 押せてしまうと、支払いまで進んだのに何も起きない行き止まりになる。
     const playable =
-      (card.支払可能 || card.場のコアも使えば支払えるか) &&
-      (メインステップ中 || (割り込みで使える && card.フラッシュで使えるか));
+      (card.支払可能 || card.場のコアも使えば支払えるか || card.ソウルマジックで使えるか) &&
+      ((メインステップ中 && card.メインで使えるか !== false) ||
+        (割り込みで使える && card.フラッシュで使えるか));
     const cardEl = handCardEl(card, playable);
     if (playable) {
       cardEl.addEventListener('click', () => doPlayCard(card));
@@ -559,7 +632,7 @@ function renderBoard(state) {
   // ブロック判断
   const blockPanel = el('blockPanel');
   if (state.保留中のブロック) {
-    blockPanel.hidden = false;
+    blockPanel.hidden = 盤面のパネルを隠す;
     const attackerHost = el('blockAttacker');
     attackerHost.innerHTML = '';
     attackerHost.appendChild(fieldCardEl(state.保留中のブロック.攻撃者, null));
@@ -578,11 +651,6 @@ function renderBoard(state) {
     blockPanel.hidden = true;
   }
 
-  // 移し先を選んでいる最中はコア移動パネルを閉じない（案内文がその中にある）
-  if (!コアの移し先を選んでいる) {
-    el('coreMovePanel').hidden = true;
-  }
-  el('trashPanel').hidden = true;
 
   // 直近に効果が何をしたかを短く出す。
   // 何も起きなかったときの理由もここに出るので、
@@ -611,10 +679,38 @@ const カードの送り先 = card =>
   : card.種別 === 'マジック' ? '/api/action/use'
   : '/api/action/summon';
 
+// 支払い方を毎回自分で決めるか。押すたびに切り替わり、次に開いたときも残る。
+//
+// これが無かったころは window.設定.毎回支払いを選ぶ を見ていたが、
+// その 設定 を誰も作っていなかった（＝いつも自動）。そのため
+// リザーブだけで払えるカードは通常コアで黙って払われ、ソウルコアを
+// 狙ってトラッシュへ送ることができなかった。ソウルコアがトラッシュに無いと
+// 「トラッシュのソウルコアを置く」効果を試す手立てが無い。
+const 支払いを毎回選ぶ鍵 = 'bs-支払いを毎回選ぶ';
+let 支払いを毎回選ぶ = localStorage.getItem(支払いを毎回選ぶ鍵) === '1';
+
+function 支払いの選び方を描く() {
+  const btn = el('payChoiceBtn');
+  btn.textContent = 支払いを毎回選ぶ ? '支払い：自分で選ぶ' : '支払い：自動';
+  btn.setAttribute('aria-pressed', 支払いを毎回選ぶ ? 'true' : 'false');
+  btn.title = 支払いを毎回選ぶ
+    ? 'カードを出すたび、どこのコアで払うかを選びます（ソウルコアも指定できます）'
+    : 'リザーブから自動で払います。押すと毎回自分で選べます';
+}
+
+el('payChoiceBtn').addEventListener('click', () => {
+  支払いを毎回選ぶ = !支払いを毎回選ぶ;
+  localStorage.setItem(支払いを毎回選ぶ鍵, 支払いを毎回選ぶ ? '1' : '0');
+  支払いの選び方を描く();
+  showToast(支払いを毎回選ぶ ? '支払い方を毎回選びます' : '支払いは自動に戻しました');
+});
+
+支払いの選び方を描く();
+
 // 支払い方を人が決める必要がある場面か。
 // ここに当てはまらなければ、これまで通り黙ってリザーブから払う。
 function 支払いを尋ねるべきか(card) {
-  if (window.設定 && window.設定.毎回支払いを選ぶ) return true;
+  if (支払いを毎回選ぶ) return true;
   if (!card.支払可能) return true;                 // リザーブだけでは足りない
   if (card.継召で軽減できる枚数 > 0) return true;    // 《継召》が使える
   if (card.ソウルマジックで使えるか) return true;    // 《ソウルマジック》が使える
@@ -702,7 +798,7 @@ function openPayPanel(card) {
   el('payInitial').hidden = card.種別 === 'マジック';
 
   renderPayPanel();
-  el('payPanel').hidden = false;
+  パネルを開く('payPanel');
 }
 
 function renderPayPanel() {
@@ -713,11 +809,12 @@ function renderPayPanel() {
   支払いの内訳.ソウルマジック = ソウルマジック;
 
   const 軽減枚数 = 支払いの内訳.継召除外.length;
-  const 必要コスト = ソウルマジック ? 0 : Math.max(0, card.コスト - 軽減枚数);
+  // 《ソウルマジック》はソウルコアちょうど1個。それ以外は軽減後のコストちょうど。
+  const 必要コスト = ソウルマジック ? 1 : Math.max(0, card.コスト - 軽減枚数);
   const 必要初期コア = card.種別 === 'マジック' ? 0 : card.最低必要数;
 
   el('payHint').textContent = ソウルマジック
-    ? '《ソウルマジック》でソウルコア1個だけ払います。'
+    ? '《ソウルマジック》で払います。出すソウルコアを1個選んでください。'
     : `コストは${必要コスト}個ちょうど。カードには${必要初期コア}個以上置きます。`;
 
   // 《継召》の候補
@@ -727,9 +824,12 @@ function renderPayPanel() {
   for (const t of 継召候補) {
     const 選択済み = 支払いの内訳.継召除外.includes(t.識別子);
     const btn = document.createElement('button');
-    btn.className = 選択済み ? 'effect-target-btn selected' : 'effect-target-btn';
-    applyArt(btn, t.カードナンバー);
-    btn.textContent = t.名前;
+    btn.className = 選択済み ? 'effect-target-btn has-thumb selected' : 'effect-target-btn has-thumb';
+    絵柄の縮小を付ける(btn, t.カードナンバー);
+    const ラベル = document.createElement('span');
+    ラベル.className = 'effect-target-label';
+    ラベル.textContent = t.名前;
+    btn.appendChild(ラベル);
     btn.disabled =
       !選択済み && 支払いの内訳.継召除外.length >= card.継召で軽減できる枚数;
     btn.addEventListener('click', () => {
@@ -746,19 +846,24 @@ function renderPayPanel() {
   el('payCostTitle').textContent = `コストに使うコア（${内訳の合計(支払いの内訳.コスト)}/${必要コスト}）`;
   el('payInitialTitle').textContent =
     `カードに置くコア（${内訳の合計(支払いの内訳.初期コア)}/${必要初期コア}以上）`;
-  el('payCost').hidden = ソウルマジック;
+  // 《ソウルマジック》のときも支払い元は隠さない。
+  // ソウルコアはリザーブとは限らず、スピリットの上に乗っていることも多い。
+  // 隠していたころは、どこのソウルコアで払うかを伝える手立てが無く、
+  // APIがリザーブ決め打ちで払おうとして失敗していた。
+  el('payCost').hidden = false;
 
-  描く支払い元('payCostList', 'コスト', 必要コスト);
-  描く支払い元('payInitialList', '初期コア', null);
+  描く支払い元('payCostList', 'コスト', 必要コスト, ソウルマジック);
+  描く支払い元('payInitialList', '初期コア', null, false);
 
-  const 合計コスト = ソウルマジック ? 0 : 内訳の合計(支払いの内訳.コスト);
+  const 合計コスト = 内訳の合計(支払いの内訳.コスト);
   el('payConfirm').disabled =
     合計コスト !== 必要コスト || 内訳の合計(支払いの内訳.初期コア) < 必要初期コア;
 }
 
 // 支払い元ごとに「通常コア」「ソウルコア」の増減ボタンを並べる。
 // 同じコアを2箇所に割り当てないよう、残り在庫はコストと初期コアを合わせて数える。
-function 描く支払い元(host識別子, 欄, 上限) {
+// ソウルコアだけを選ばせたいとき（《ソウルマジック》）は ソウルコアだけ を立てる。
+function 描く支払い元(host識別子, 欄, 上限, ソウルコアだけ = false) {
   const host = el(host識別子);
   host.innerHTML = '';
 
@@ -774,11 +879,13 @@ function 描く支払い元(host識別子, 欄, 上限) {
     行.className = 'pay-source';
     行.innerHTML = `<span class="pay-source-name">${候補.名前}</span>`;
 
-    行.appendChild(
-      増減ボタン('通常', この欄.通常, 残り通常 > 0 && (上限 === null || 内訳の合計(支払いの内訳[欄]) < 上限), 差分 => {
-        変更する(欄, 候補, '通常', 差分);
-      })
-    );
+    if (!ソウルコアだけ) {
+      行.appendChild(
+        増減ボタン('通常', この欄.通常, 残り通常 > 0 && (上限 === null || 内訳の合計(支払いの内訳[欄]) < 上限), 差分 => {
+          変更する(欄, 候補, '通常', 差分);
+        })
+      );
+    }
     if (候補.ソウル > 0) {
       行.appendChild(
         増減ボタン('ソウル', この欄.ソウル, 残りソウル > 0 && この欄.ソウル < 1 && (上限 === null || 内訳の合計(支払いの内訳[欄]) < 上限), 差分 => {
@@ -834,29 +941,37 @@ const 内訳をAPIの形に = 一覧 =>
 
 el('paySoulMagicCheck').addEventListener('change', () => {
   支払いの内訳.コスト = [];
+  // リザーブにソウルコアがあるならそれを既定にする（いちばん多い出し方）。
+  // 場のスピリットの上にしか無いときは、人がそのカードを選ぶ。
+  if (el('paySoulMagicCheck').checked && lastState.自分.リザーブ.ソウルコア) {
+    支払いの内訳.コスト = [{ 鍵: 'リザーブ', カードID: undefined, 通常: 0, ソウル: 1 }];
+  }
   renderPayPanel();
 });
 
 el('payCancel').addEventListener('click', () => {
-  el('payPanel').hidden = true;
   支払い中のカード = null;
+  パネルを閉じる('payPanel');
 });
 
 el('payConfirm').addEventListener('click', async () => {
   const card = 支払い中のカード;
   if (!card) return;
-  const 支払い = {
-    コスト: 内訳をAPIの形に(支払いの内訳.コスト),
-    継召除外: 支払いの内訳.継召除外,
-  };
-  if (card.種別 !== 'マジック') {
-    支払い.初期コア = 内訳をAPIの形に(支払いの内訳.初期コア);
-  }
+  // 空の一覧は送らない。「0個をここから払う」と「どこから払うか決めていない」は別物で、
+  // 前者のつもりで空配列を送っていたため、APIが支払い元0件で組み立ててしまい、
+  // 《ソウルマジック》がソウルコアを1個も出せずに失敗していた。
+  const 支払い = {};
+  if (支払いの内訳.コスト.length > 0) 支払い.コスト = 内訳をAPIの形に(支払いの内訳.コスト);
   if (支払いの内訳.ソウルマジック) {
     支払い.ソウルマジック = true;
+  } else {
+    if (支払いの内訳.継召除外.length > 0) 支払い.継召除外 = 支払いの内訳.継召除外;
+    if (card.種別 !== 'マジック' && 支払いの内訳.初期コア.length > 0) {
+      支払い.初期コア = 内訳をAPIの形に(支払いの内訳.初期コア);
+    }
   }
-  el('payPanel').hidden = true;
   支払い中のカード = null;
+  パネルを閉じる('payPanel');
   const state = await api('POST', カードの送り先(card), {
     as: viewer,
     cardId: card.識別子,
@@ -881,9 +996,16 @@ function openCoreMove(card) {
   el('coreMoveFromReserveSoulBtn').hidden = !lastState || !lastState.自分.リザーブ.ソウルコア;
   // ソウルコアを持っていれば、別のカードへ直に渡せる
   el('coreMoveSoulToOtherCard').hidden = !card.ソウルコア;
+  // 入れ替えは、このカードがソウルコアを持っているときだけ差し出せる。
+  // 相手側（通常コアを出すほう）は、押して選んだカードかリザーブ。
+  const 他に通常コアがある =
+    !!lastState &&
+    lastState.自分.フィールド.some(c => c.識別子 !== card.識別子 && c.コア数 - (c.ソウルコア ? 1 : 0) > 0);
+  el('coreSwapWithOtherCard').hidden = !card.ソウルコア || !他に通常コアがある;
+  el('coreSwapWithReserve').hidden = !card.ソウルコア || !lastState || lastState.自分.リザーブ.通常 < 1;
   el('coreMoveToCardHint').hidden = true;
   コアの移し先を選んでいる = null;
-  el('coreMovePanel').hidden = false;
+  パネルを開く('coreMovePanel');
 }
 
 el('coreMoveMinus').addEventListener('click', () => {
@@ -895,8 +1017,9 @@ el('coreMovePlus').addEventListener('click', () => {
   el('coreMoveAmount').textContent = coreMoveAmount;
 });
 el('coreMoveClose').addEventListener('click', () => {
-  el('coreMovePanel').hidden = true;
   activeCoreCard = null;
+  コアの移し先を選んでいる = null;
+  パネルを閉じる('coreMovePanel');
 });
 
 async function moveCore(方向, ソウルコア = false) {
@@ -908,8 +1031,8 @@ async function moveCore(方向, ソウルコア = false) {
     方向,
     数: ソウルコア ? 1 : coreMoveAmount,
   });
-  el('coreMovePanel').hidden = true;
   activeCoreCard = null;
+  パネルを閉じる('coreMovePanel');
   applyState(state);
 }
 
@@ -919,8 +1042,8 @@ async function placeSoulCoreToCard() {
     as: viewer,
     cardId: activeCoreCard.識別子,
   });
-  el('coreMovePanel').hidden = true;
   activeCoreCard = null;
+  パネルを閉じる('coreMovePanel');
   applyState(state);
 }
 
@@ -932,16 +1055,19 @@ el('coreMoveFromReserveSoulBtn').addEventListener('click', placeSoulCoreToCard);
 // カードからカードへ直に移す。
 // これが無いと、いったんリザーブへ戻してから乗せ直すことになり、
 // 「別々のスピリットの上のコアを入れ替える」ができなかった。
-let コアの移し先を選んでいる = null; // 'normal' | 'soul' | null
+let コアの移し先を選んでいる = null; // 'normal' | 'soul' | 'swap' | null
+
+const 移し先の案内 = {
+  soul: 'ソウルコアを移す先のカードを押してください',
+  swap: 'ソウルコアと通常コアを入れ替える相手のカードを押してください',
+};
 
 function 移し先を選び始める(種類) {
   if (!activeCoreCard) return;
   コアの移し先を選んでいる = 種類;
   el('coreMoveToCardHint').hidden = false;
   el('coreMoveToCardHint').textContent =
-    種類 === 'soul'
-      ? 'ソウルコアを移す先のカードを押してください'
-      : `コア${coreMoveAmount}個を移す先のカードを押してください`;
+    移し先の案内[種類] ?? `コア${coreMoveAmount}個を移す先のカードを押してください`;
   renderBoard(lastState);
 }
 
@@ -951,8 +1077,19 @@ async function 移し先を決める(移動先カードID) {
   if (!元 || !種類) return;
   コアの移し先を選んでいる = null;
   el('coreMoveToCardHint').hidden = true;
-  el('coreMovePanel').hidden = true;
   activeCoreCard = null;
+  パネルを閉じる('coreMovePanel');
+
+  // 入れ替えだけは別の入口。2手に分けると途中で消滅するので1回で済ませる。
+  if (種類 === 'swap') {
+    const state = await api('POST', '/api/action/swap-core', {
+      as: viewer,
+      ソウル側カードID: 元.識別子,
+      通常側カードID: 移動先カードID,
+    });
+    applyState(state);
+    return;
+  }
 
   const エンドポイント = 種類 === 'soul' ? '/api/action/move-soul-core' : '/api/action/move-core';
   const state = await api('POST', エンドポイント, {
@@ -967,6 +1104,21 @@ async function 移し先を決める(移動先カードID) {
 
 el('coreMoveToOtherCard').addEventListener('click', () => 移し先を選び始める('normal'));
 el('coreMoveSoulToOtherCard').addEventListener('click', () => 移し先を選び始める('soul'));
+el('coreSwapWithOtherCard').addEventListener('click', () => 移し先を選び始める('swap'));
+
+// リザーブの通常コアとの入れ替えは相手を選ぶ必要がないので、その場で送る
+el('coreSwapWithReserve').addEventListener('click', async () => {
+  if (!activeCoreCard) return;
+  const 元 = activeCoreCard;
+  activeCoreCard = null;
+  コアの移し先を選んでいる = null;
+  パネルを閉じる('coreMovePanel');
+  const state = await api('POST', '/api/action/swap-core', {
+    as: viewer,
+    ソウル側カードID: 元.識別子,
+  });
+  applyState(state);
+});
 
 // リタイア（投了）。押し間違いで試合が終わらないよう1回確認する。
 el('retireBtn').addEventListener('click', async () => {
@@ -980,7 +1132,7 @@ el('retireBtn').addEventListener('click', async () => {
 function showCardEffect(card) {
   el('cardEffectName').textContent = card.名前;
   el('cardEffectText').textContent = card.テキスト || '効果なし';
-  el('cardEffectPanel').hidden = false;
+  パネルを開く('cardEffectPanel');
 }
 
 el('effectConfirm').addEventListener('click', () => {
@@ -1004,11 +1156,11 @@ el('activateSkip').addEventListener('click', () => {
 });
 
 el('cardEffectClose').addEventListener('click', () => {
-  el('cardEffectPanel').hidden = true;
+  パネルを閉じる('cardEffectPanel');
 });
 
 el('cardDetailClose').addEventListener('click', () => {
-  el('cardDetailPanel').hidden = true;
+  パネルを閉じる('cardDetailPanel');
 });
 
 // === トラッシュ一覧 ===
@@ -1037,7 +1189,7 @@ function showCardDetail(card) {
   cardEl.appendChild(scrim);
 
   container.appendChild(cardEl);
-  el('cardDetailPanel').hidden = false;
+  パネルを開く('cardDetailPanel');
 }
 
 function trashCardEl(card) {
@@ -1078,7 +1230,7 @@ function openTrash(list, title) {
       container.appendChild(cardEl);
     }
   }
-  el('trashPanel').hidden = false;
+  パネルを開く('trashPanel');
 }
 
 el('selfTrash').addEventListener('click', () => {
@@ -1088,7 +1240,7 @@ el('foeTrash').addEventListener('click', () => {
   if (lastState) openTrash(lastState.相手.トラッシュ, `${lastState.相手.名前} のトラッシュ`);
 });
 el('trashClose').addEventListener('click', () => {
-  el('trashPanel').hidden = true;
+  パネルを閉じる('trashPanel');
 });
 
 // 最初に出すのはデッキ選択。

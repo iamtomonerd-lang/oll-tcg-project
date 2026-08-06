@@ -91,6 +91,21 @@
           <span class="mode-btn-title">飛剛アクライ</span>
           <span class="mode-btn-desc">赤色のスピリット（BP7000→10000）、《継召》と《真界放》のめくり</span>
         </button>
+        <!-- 風牙と、風牙でないカードを混ぜたデッキ。
+             これが無いと、場に風牙でない味方が1体もいないため
+             「系統：風牙を持つ味方だけ」を対象にとる効果の絞り込みを目で確かめられない。 -->
+        <button class="mode-btn deck-btn" data-deck="mixed">
+          <span class="mode-btn-title">風牙＋風牙以外（混成）</span>
+          <span class="mode-btn-desc">系統で対象を絞る効果を確かめる。風牙だけが選べることを見られる</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="effect">
+          <span class="mode-btn-title">効果ぜんぶ入り</span>
+          <span class="mode-btn-desc">実装済みのカードを1枚ずつ。誘発・起動・使用のすべての道を通せる</span>
+        </button>
+        <button class="mode-btn deck-btn" data-deck="purple">
+          <span class="mode-btn-title">紫／血醒</span>
+          <span class="mode-btn-desc">コアを剥がす効果が主体。赤とは当たり方が違う</span>
+        </button>
       </div>
     </div>
   </section>
@@ -163,6 +178,12 @@
     <div class="turn-banner" id="turnBanner" data-layout-id="ターン表示">
       <span id="turnLabel">―</span>
       <button id="endStepBtn" class="btn-ghost" hidden>ステップを終了</button>
+      <!-- 支払い方を毎回自分で決めるかどうか。
+           これが無いと、リザーブだけで払えるカードは黙って通常コアから払われ、
+           ソウルコアを狙ってトラッシュへ送ることができない。
+           ソウルコアがトラッシュに無いと、キュペルLv1/Lv2・飛赫レンシスLv2の
+           「トラッシュのソウルコアを置く」効果を試す手立てが無くなる。 -->
+      <button id="payChoiceBtn" class="btn-ghost" type="button" aria-pressed="false">支払い：自動</button>
       <button id="retireBtn" class="btn-ghost" type="button">リタイア</button>
     </div>
 
@@ -204,6 +225,13 @@
     <div class="popover-actions">
       <button id="coreMoveToOtherCard" class="btn-outline" type="button">別のカードへ移す</button>
       <button id="coreMoveSoulToOtherCard" class="btn-outline" type="button" hidden>ソウルコアを別のカードへ</button>
+    </div>
+    <!-- ソウルコアと通常コアの入れ替え。
+         「外す」→「乗せる」の2手に分けると、途中でLv1のコストを割った
+         スピリットが消滅してしまうので、1回でまとめて動かす。 -->
+    <div class="popover-actions">
+      <button id="coreSwapWithOtherCard" class="btn-outline" type="button" hidden>別のカードの通常コアと入れ替える</button>
+      <button id="coreSwapWithReserve" class="btn-outline" type="button" hidden>リザーブの通常コアと入れ替える</button>
     </div>
     <button id="coreMoveClose" class="popover-close" type="button">閉じる</button>
   </div>
