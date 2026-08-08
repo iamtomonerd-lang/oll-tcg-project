@@ -71,13 +71,37 @@ jobs:
         run: |
           set -euo pipefail
           current='${{ github.sha }}'
-          # 前回この環境へ実際に公開されたコミット。記録が無ければ空になる。
-          deployed="$(gh api \
-            'repos/${{ github.repository }}/deployments?environment=github-pages&per_page=1' \
-            --jq '.[0].sha // ""' 2>/dev/null || echo '')"
+
+          # 前回この環境へ「成功した」公開のコミット。記録が無ければ空になる。
+          #
+          # deployments を1件見るだけでは足りない。deployment の記録は
+          # deploy ジョブが始まった時点で作られるので、Pagesへの配置に
+          # 失敗しても記録だけは残る。それを「公開済み」と数えていたため、
+          # 一度失敗すると以後の公開がすべて「変わっていない」と判断されて
+          # 飛ばされ、サイトは古い版のまま、実行結果は success のまま——
+          # という形で止まっていた（実際に 1c90860 でそうなった）。
+          #
+          # そこで新しい順に何件か見て、状態が success のものを最初に拾う。
+          deployed=''
+          for sha in $(gh api \
+            'repos/${{ github.repository }}/deployments?environment=github-pages&per_page=20' \
+            --jq '.[].sha' 2>/dev/null || true); do
+            id="$(gh api \
+              'repos/${{ github.repository }}/deployments?environment=github-pages&sha='"$sha"'&per_page=1' \
+              --jq '.[0].id // ""' 2>/dev/null || echo '')"
+            [ -z "$id" ] && continue
+            state="$(gh api \
+              "repos/${{ github.repository }}/deployments/$id/statuses?per_page=1" \
+              --jq '.[0].state // ""' 2>/dev/null || echo '')"
+            if [ "$state" = 'success' ]; then
+              deployed="$sha"
+              break
+            fi
+            echo "（$sha は $state なので公開済みとは数えない）"
+          done
 
           echo "main の先頭 : $current"
-          echo "公開済み    : ${deployed:-（記録なし）}"
+          echo "公開済み    : ${deployed:-（成功した公開の記録なし）}"
 
           if [ "${FORCE:-false}" = 'true' ]; then
             echo '→ 手で指定されたので公開します'
