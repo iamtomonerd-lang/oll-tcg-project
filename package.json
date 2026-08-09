@@ -13,7 +13,8 @@
     "test": "npm run build && node --test \"dist/**/*.test.js\"",
     "lint": "eslint src",
     "clean": "rm -rf dist public/ゲーム本体.js public/版.json",
-    "server": "npm run build:all && node dist/サーバー/ウェブサーバー.js"
+    "server": "npm run build:all && node dist/サーバー/ウェブサーバー.js",
+    "学習": "npm run build && node scripts/AIを鍛える.mjs"
   },
   "keywords": [
     "tcg",

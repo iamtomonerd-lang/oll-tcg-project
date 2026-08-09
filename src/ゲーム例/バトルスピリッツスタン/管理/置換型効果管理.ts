@@ -9,6 +9,11 @@ export class 置換型効果管理 {
   private 置換型効果判定: 置換型効果判定;
   private 置換済み事象: Set<string> = new Set();
 
+  // 状態を写し取る（先読みで盤面を複製するため）
+  状態を写す(元: 置換型効果管理): void {
+    this.置換済み事象 = new Set(元.置換済み事象);
+  }
+
   constructor() {
     this.置換型効果判定 = new 置換型効果判定();
   }
