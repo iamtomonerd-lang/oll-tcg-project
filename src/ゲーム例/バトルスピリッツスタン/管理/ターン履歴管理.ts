@@ -12,6 +12,15 @@ export class ターン履歴管理 {
   // 出来事の名前 → 起きた対象プレイヤーの集合
   private 記録 = new Map<string, Set<string>>();
 
+  // 状態を写し取る（先読みで盤面を複製するため）。
+  // 『このターンに自分のライフが減っていたなら』の答えがここにある。
+  状態を写す(元: ターン履歴管理): void {
+    this.記録 = new Map();
+    for (const [出来事, 一覧] of 元.記録.entries()) {
+      this.記録.set(出来事, new Set(一覧));
+    }
+  }
+
   記録する(出来事: string, プレイヤー識別子: string): void {
     const 集合 = this.記録.get(出来事) ?? new Set<string>();
     集合.add(プレイヤー識別子);
